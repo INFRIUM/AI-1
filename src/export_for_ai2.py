@@ -668,7 +668,10 @@ def public_provenance(frames):
                         "limits": ["진폭 Feature 는 가진 조건(차량 속도)에 민감함: 손상이 없어도 속도가 바뀌면 크게 벗어남"]},
         },
         "original_file_md5": {n: {f: file_md5(ORIGINAL_DIR / f) for f in fs} for n, fs in files.items()},
-        "degradation": {"sensor": "LIS2DW12 (±2g, 14bit, 고성능 + 저잡음, 90 µg/√Hz)", "order": "잡음 → 양자화 → 범위 제한(SAT) → 2~25Hz 필터 → Feature",
+        "degradation": {"seed_rule": "채널 난수 = numpy default_rng([20261109, 데이터셋 번호 (HBTA 1, Ponte Moesa 2, Old ADA 3), 측정 번호, 채널 번호]). "
+                                     "HBTA 측정 번호: AI1-public-1.1 의 10개는 config 순서대로 1–10, 확인용 새 측정은 사전 등록서 목록 순서대로 11부터. "
+                                     "채널 번호: 센서·축 순서 (acc01 Y = 1, acc01 Z = 2, acc02 Y = 3, acc02 Z = 4). 기존 측정의 열화 결과는 바뀌지 않음",
+                        "sensor": "LIS2DW12 (±2g, 14bit, 고성능 + 저잡음, 90 µg/√Hz)", "order": "잡음 → 양자화 → 범위 제한(SAT) → 2~25Hz 필터 → Feature",
                         "z_axis_gravity": "수직축은 1g 를 더한 상태로 양자화·범위 제한 후 다시 뺌", "seed": LIS2DW12["seed"],
                         "noise_band_rms_mg": {"200Hz": 0.411, "100Hz": 0.416},
                         "hold_threshold_m_s2": {"deg_200Hz": 0.0057, "deg_100Hz": 0.0058, "raw_moesa_MR3000C": 0.00063},

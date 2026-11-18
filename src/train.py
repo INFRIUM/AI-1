@@ -219,6 +219,10 @@ def main():
                        usecols=["experiment_id", "split", "damage_type", "severity_level"])
     sensors = BRIDGES[ACTIVE_BRIDGE]["sensors"]
 
+    full = pd.read_csv(RAW_DIR / ACTIVE_BRIDGE / "experiments.csv", keep_default_na=False)
+    if "label_status" in full and (full["label_status"] == "확인용").any():
+        raise SystemExit("확인용 측정이 들어 있습니다. 합의(INFRIUM/AI-2#15)대로 AI① 모델은 v1 그대로 쓰므로 다시 학습하지 않습니다. "
+                         "→ train.py 없이 predict.py 만 실행하세요.")
     split = split_experiments(exps)
     feats["split"] = feats["experiment_id"].map(split)
     cols = model_feature_columns(feats, sensors)

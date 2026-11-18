@@ -421,6 +421,15 @@ HBTA = {
     "window_s": 10.24,           # 기본 Feature·AR(5) Window (겹침 없음)
     # 정상(UDS) 측정마다 Window 를 시간 순서대로 나눈 개수: AI① train / AI① val / AI② 보정 / test(블록 2개)
     "uds_split_windows": {"train": 33, "val": 16, "ai2_calib": 16, "test": (9, 8)},
+    # 확인용 새 측정 (INFRIUM/AI-2#15, AI1-public-1.2). AI② Truss v2 사전 등록서가 Push 된 뒤에만 채운다.
+    # preregistration 이 비어 있으면 convert_public.py 가 새 측정을 변환하지 않는다 (사전 등록 전 결과 방지)
+    # 기존 10개 측정·실험 ID·열화 난수는 바뀌지 않는다: 새 측정은 측정 번호 11부터, 실험 ID 는 기존 다음 번호부터
+    "check": {
+        "preregistration": "",        # 사전 등록서 위치 (예: INFRIUM/AI-2 커밋 주소)
+        "records": [],                # 사전 등록서에 적힌 측정 이름 (순서 = 열화 난수 측정 번호 11, 12, ...)
+        "split": {},                  # 측정 이름 → ai1_split (사전 등록서대로, 없으면 "test")
+        "steady_s": None,             # 사용할 구간 [초] (사전 등록서대로)
+    },
 }
 
 # Ponte Moesa Campagnola (박스교). ETH 10.3929/ethz-b-000716850, CC BY-NC 4.0
