@@ -1,0 +1,51 @@
+﻿측정 이름,damage_state,가진 위치,가진 방식,가진 방향,반복 번호,date,temperature,train_passing,wind_range,mvs_mode,mvs_direction,mvs_position,mvs_position_coordinates,duration,sample_rate,name,샘플 수,길이 (초),AI1-public-1.1 사용
+MVS_P1_DS1_SM_Y_01,DS1,P1,SM,Y,01,2020-09-23,12,No,High,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",622.2,100,MVS_P1_DS1_SM_Y_01,62221,622.21,아니요
+MVS_P1_DS1_SM_Z_01,DS1,P1,SM,Z,01,2020-09-23,12,Yes,High,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",623.83,100,MVS_P1_DS1_SM_Z_01,62384,623.84,아니요
+MVS_P2_DS1_NM_Z_01,DS1,P2,NM,Z,01,2020-09-27,14,No,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",949.07,100,MVS_P2_DS1_NM_Z_01,94908,949.08,예
+MVS_P2_DS1_SM_Y_01,DS1,P2,SM,Y,01,2020-09-27,14,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",644.32,100,MVS_P2_DS1_SM_Y_01,64433,644.33,아니요
+MVS_P2_DS1_SM_Z_01,DS1,P2,SM,Z,01,2020-09-27,14,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",623.7,100,MVS_P2_DS1_SM_Z_01,62371,623.71,아니요
+MVS_P1_DS2_SM_Y_01,DS2,P1,SM,Y,01,2020-09-23,10,No,High,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",624.57,100,MVS_P1_DS2_SM_Y_01,62458,624.58,아니요
+MVS_P1_DS2_SM_Z_01,DS2,P1,SM,Z,01,2020-09-23,10,No,High,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",623.57,100,MVS_P1_DS2_SM_Z_01,62358,623.58,아니요
+MVS_P2_DS2_NM_Z_01,DS2,P2,NM,Z,01,2020-09-28,13,No,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",948.52,100,MVS_P2_DS2_NM_Z_01,94853,948.53,예
+MVS_P2_DS2_SM_Y_01,DS2,P2,SM,Y,01,2020-09-28,16,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",622.14,100,MVS_P2_DS2_SM_Y_01,62215,622.15,아니요
+MVS_P2_DS2_SM_Z_01,DS2,P2,SM,Z,01,2020-09-28,15,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",623.77,100,MVS_P2_DS2_SM_Z_01,62378,623.78,아니요
+MVS_P1_DS3_SM_Y_01,DS3,P1,SM,Y,01,2020-09-23,10,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",624.18,100,MVS_P1_DS3_SM_Y_01,62419,624.19,아니요
+MVS_P1_DS3_SM_Z_01,DS3,P1,SM,Z,01,2020-09-23,10,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",623.06,100,MVS_P1_DS3_SM_Z_01,62307,623.07,아니요
+MVS_P2_DS3_NM_Z_01,DS3,P2,NM,Z,01,2020-09-28,21,Yes,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",951.51,100,MVS_P2_DS3_NM_Z_01,95152,951.52,예
+MVS_P2_DS3_SM_Y_01,DS3,P2,SM,Y,01,2020-09-28,20,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",623.01,100,MVS_P2_DS3_SM_Y_01,62302,623.02,아니요
+MVS_P2_DS3_SM_Z_01,DS3,P2,SM,Z,01,2020-09-28,21,No,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",626.76,100,MVS_P2_DS3_SM_Z_01,62677,626.77,아니요
+MVS_P1_DS4_SM_Y_01,DS4,P1,SM,Y,01,2020-09-23,10,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",621.85,100,MVS_P1_DS4_SM_Y_01,62186,621.86,아니요
+MVS_P1_DS4_SM_Z_01,DS4,P1,SM,Z,01,2020-09-23,10,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",623.73,100,MVS_P1_DS4_SM_Z_01,62374,623.74,아니요
+MVS_P2_DS4_NM_Z_01,DS4,P2,NM,Z,01,2020-09-28,22,No,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",950.76,100,MVS_P2_DS4_NM_Z_01,95077,950.77,예
+MVS_P2_DS4_SM_Y_01,DS4,P2,SM,Y,01,2020-09-28,19,Yes,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",623.13,100,MVS_P2_DS4_SM_Y_01,62314,623.14,아니요
+MVS_P2_DS4_SM_Z_01,DS4,P2,SM,Z,01,2020-09-28,21,No,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",623.13,100,MVS_P2_DS4_SM_Z_01,62314,623.14,아니요
+MVS_P1_DS5_SM_Y_01,DS5,P1,SM,Y,01,2020-09-24,9,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",621.47,100,MVS_P1_DS5_SM_Y_01,62148,621.48,아니요
+MVS_P1_DS5_SM_Z_01,DS5,P1,SM,Z,01,2020-09-24,9,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",622.97,100,MVS_P1_DS5_SM_Z_01,62298,622.98,아니요
+MVS_P2_DS5_NM_Z_01,DS5,P2,NM,Z,01,2020-09-27,13,No,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",948.21,100,MVS_P2_DS5_NM_Z_01,94822,948.22,예
+MVS_P2_DS5_SM_Y_01,DS5,P2,SM,Y,01,2020-09-27,13,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",623.71,100,MVS_P2_DS5_SM_Y_01,62372,623.72,아니요
+MVS_P2_DS5_SM_Z_01,DS5,P2,SM,Z,01,2020-09-27,13,No,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",623.59,100,MVS_P2_DS5_SM_Z_01,62360,623.6,아니요
+MVS_P1_DS6_SM_Y_01,DS6,P1,SM,Y,01,2020-09-24,11,Yes,Medium,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",622.09,100,MVS_P1_DS6_SM_Y_01,62210,622.1,아니요
+MVS_P1_DS6_SM_Z_01,DS6,P1,SM,Z,01,2020-09-24,11,Yes,Medium,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",622.34,100,MVS_P1_DS6_SM_Z_01,62235,622.35,아니요
+MVS_P2_DS6_NM_Z_01,DS6,P2,NM,Z,01,2020-09-27,13,No,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",952.08,100,MVS_P2_DS6_NM_Z_01,95209,952.09,예
+MVS_P2_DS6_SM_Y_01,DS6,P2,SM,Y,01,2020-09-27,13,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",622.58,100,MVS_P2_DS6_SM_Y_01,62259,622.59,아니요
+MVS_P2_DS6_SM_Z_01,DS6,P2,SM,Z,01,2020-09-27,13,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",623.95,100,MVS_P2_DS6_SM_Z_01,62396,623.96,아니요
+MVS_P1_DS7_SM_Y_01,DS7,P1,SM,Y,01,2020-09-24,12,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",621.83,100,MVS_P1_DS7_SM_Y_01,62184,621.84,아니요
+MVS_P1_DS7_SM_Z_01,DS7,P1,SM,Z,01,2020-09-24,12,Yes,Medium,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",622.58,100,MVS_P1_DS7_SM_Z_01,62259,622.59,아니요
+MVS_P2_DS7_NM_Z_01,DS7,P2,NM,Z,01,2020-09-27,13,Yes,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",948.08,100,MVS_P2_DS7_NM_Z_01,94809,948.09,예
+MVS_P2_DS7_SM_Y_01,DS7,P2,SM,Y,01,2020-09-27,13,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",627.08,100,MVS_P2_DS7_SM_Y_01,62709,627.09,아니요
+MVS_P2_DS7_SM_Z_01,DS7,P2,SM,Z,01,2020-09-27,13,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",625.33,100,MVS_P2_DS7_SM_Z_01,62534,625.34,아니요
+MVS_P1_DS8_SM_Y_01,DS8,P1,SM,Y,01,2020-09-24,15,No,Medium,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",620.67,100,MVS_P1_DS8_SM_Y_01,62068,620.68,아니요
+MVS_P1_DS8_SM_Z_01,DS8,P1,SM,Z,01,2020-09-24,15,No,Medium,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",622.54,100,MVS_P1_DS8_SM_Z_01,62255,622.55,아니요
+MVS_P2_DS8_NM_Z_01,DS8,P2,NM,Z,01,2020-09-27,11,No,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",952.85,100,MVS_P2_DS8_NM_Z_01,95286,952.86,예
+MVS_P2_DS8_SM_Y_01,DS8,P2,SM,Y,01,2020-09-27,12,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",623.1,100,MVS_P2_DS8_SM_Y_01,62311,623.11,아니요
+MVS_P2_DS8_SM_Z_01,DS8,P2,SM,Z,01,2020-09-27,12,No,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",625.23,100,MVS_P2_DS8_SM_Z_01,62524,625.24,아니요
+MVS_P1_UDS_SM_Y_01,UDS,P1,SM,Y,01,2020-09-23,15,No,Medium,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",621.46,100,MVS_P1_UDS_SM_Y_01,62147,621.47,아니요
+MVS_P1_UDS_SM_Y_02,UDS,P1,SM,Y,02,2020-09-22,11,Yes,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P1,"[7.0, 0.0, 0.6]",616.8,100,MVS_P1_UDS_SM_Y_02,61681,616.81,아니요
+MVS_P1_UDS_SM_Z_01,UDS,P1,SM,Z,01,2020-09-23,15,No,Medium,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",624.09,100,MVS_P1_UDS_SM_Z_01,62410,624.1,아니요
+MVS_P1_UDS_SM_Z_02,UDS,P1,SM,Z,02,2020-09-22,11,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P1,"[7.0, 0.0, 0.6]",625.3,100,MVS_P1_UDS_SM_Z_02,62531,625.31,아니요
+MVS_P2_UDS_NM_Z_01,UDS,P2,NM,Z,01,2020-09-27,13,No,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",947.09,100,MVS_P2_UDS_NM_Z_01,94710,947.1,예
+MVS_P2_UDS_NM_Z_02,UDS,P2,NM,Z,02,2020-09-22,10,Yes,Low,Noise mode,Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",948.06,100,MVS_P2_UDS_NM_Z_02,94807,948.07,예
+MVS_P2_UDS_SM_Y_01,UDS,P2,SM,Y,01,2020-09-27,14,No,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",623.85,100,MVS_P2_UDS_SM_Y_01,62386,623.86,아니요
+MVS_P2_UDS_SM_Y_02,UDS,P2,SM,Y,02,2020-09-22,10,Yes,Low,Sweep mode (sine),Horizontal lateral (global CSYS Y-direction),Position P2,"[0.0, 0.0, 0.6]",625.19,100,MVS_P2_UDS_SM_Y_02,62520,625.2,아니요
+MVS_P2_UDS_SM_Z_01,UDS,P2,SM,Z,01,2020-09-27,13,No,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",623.34,100,MVS_P2_UDS_SM_Z_01,62335,623.35,아니요
+MVS_P2_UDS_SM_Z_02,UDS,P2,SM,Z,02,2020-09-22,10,Yes,Low,Sweep mode (sine),Vertical (global CSYS Z-direction),Position P2,"[0.0, 0.0, 0.6]",623.81,100,MVS_P2_UDS_SM_Z_02,62382,623.82,아니요
