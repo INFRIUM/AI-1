@@ -494,7 +494,7 @@ def public_experiments(name):
     return exps
 
 
-def public_results(name, source, exps):
+def public_results(name, source, exps, version=MODEL_VERSION):
     """<dataset>_anomaly_results_<raw|deg>.csv: AI① 이상탐지 결과 + 특징 + AI② 지표 + 판정 보류 + 라벨·조건"""
     pred = pd.read_csv(public_paths(name, source)[0], keep_default_na=False, na_values=[""])
     tag = "raw" if source == "public_raw" else "deg"
@@ -510,8 +510,16 @@ def public_results(name, source, exps):
     keep = ["experiment_id", *[c for c in LABEL_COLS if c in exps.columns]]
     out = pred.drop(columns=[c for c in ("condition", "temperature_c", "load_level_kg", "load_position") if c in pred])
     out = out.merge(exps[keep], on="experiment_id", how="left")
+    out = out[out["experiment_id"].isin(exps["experiment_id"])].copy()   # 이번 전달 대상 실험만
+    t = pd.to_numeric(out.get("temperature_c"), errors="coerce") if "temperature_c" in out else None
+    if t is not None and t.notna().any() and (t.dropna() % 1 == 0).all():   # 측정 단위 정수 온도는 정수로 표기
+        out["temperature_c"] = t.astype("Int64")
     out.insert(0, "dataset", name)
-    out["model_version"] = MODEL_VERSION
+    out["model_version"] = version
+    if name == "hbta" and version != MODEL_VERSION:   # 1.2 부터: 측정 시작부터의 시간 [초] (HBTA 시간축 = 측정 날짜 00:00 UTC + 경과 시간)
+        day = out["experiment_id"].map(exps.set_index("experiment_id")["date"]).map(
+            lambda d: pd.Timestamp(d, tz="UTC").value // 1000)
+        out.insert(5, "window_start_s", ((out["window_start_us"] - day) / 1e6).round(2))
     front = ["dataset", "experiment_id", "window_id", "window_start_us", "window_end_us", *[c for c in LABEL_COLS if c in out]]
     return out[front + [c for c in out.columns if c not in front]]
 
@@ -523,12 +531,13 @@ def public_column_guide(frames):
         "experiment_id": ("실험 ID (중립 ID, 정답 없음). 정상 측정은 시간 블록마다 따로", "", "연결 키"),
         "window_id": ("실험 내 Window 순번", "", "참고"), "window_start_us": ("Window 시작 시각 µs. 키 = experiment_id + window_start_us", "µs", "연결 키"),
         "window_end_us": ("Window 끝 시각 µs", "µs", "참고"),
+        "window_start_s": ("HBTA: 측정 시작부터 Window 시작까지의 시간 (스윕 가진 시점 맞추기용)", "s", "참고"),
         "window_start": ("Window 시작 시각 (window_start_us 를 시간대 변환 없이 표시)", "", "참고"),
         "window_end": ("Window 끝 시각", "", "참고"),
         "damage_stage": ("손상 단계 라벨 (정답)", "", "라벨, 모델 입력 금지"),
         "stage_description": ("손상 단계 설명", "", "참고"),
         "label_status": ("확실 / 참고 / 속도 영향 확인용 (참고, Old ADA 30·50km/h 정상 주행) / 참고 (회복 불완전). 주 평가는 '확실'만", "", "라벨"),
-        "ai1_split": ("AI① 분할: train / val / ai2_calib(AI② T1 보정) / test / session(세션 차이 확인용)", "", "분할"),
+        "ai1_split": ("AI① 분할: train / val / ai2_calib(AI② T1 보정) / test / session(세션 차이 확인용) / dev(개발용, 학습·평가 구분 없음)", "", "분할"),
         "cv_group": ("손상 상태 교차 검증 묶음 A / B (Ponte Moesa)", "", "분할"),
         "subset": ("보고용 구분: 작업전 / 작업중 (DS2 test), 저녁 / 낮 (세션)", "", "분할"),
         "source_record": ("원본 측정 이름. 정답이 들어 있음", "", "모델 입력 금지"),
@@ -720,26 +729,63 @@ def v2_provenance():
     return out
 
 
-def export_public():
-    PUBLIC_OUT.mkdir(parents=True, exist_ok=True)
+PUBLIC_STAGES = {
+    # 전달 단계: (데이터셋, 출력 폴더, 버전, 실험 선택)
+    "1.1": (PUBLIC_DATASETS, PUBLIC_OUT, MODEL_VERSION, lambda e: ~e["label_status"].isin(["개발용", "확인용"])),
+    "1.2-dev": (("hbta",), PUBLIC_OUT.with_name("for_AI2_1.2-dev"), "AI1-public-1.2-dev", lambda e: e["label_status"] == "개발용"),
+}
+
+
+def dev_provenance(frames):
+    """AI1-public-1.2-dev 기록: 개발용 SM 정상 6개 (INFRIUM/AI-2#15, AI② 2026-11-19 요청)"""
+    from config import HBTA, LIS2DW12
+    root = RESULTS_DIR.parents[1]
+    table = pd.read_csv(root / "results" / "public" / "hbta_sm_id_table.csv")
+    f = frames["hbta_raw"]
+    return {
+        "generated_at": datetime.now().isoformat(timespec="seconds"), "model_version": "AI1-public-1.2-dev",
+        "purpose": "Truss v2 사전 등록 전 개발용 탐색 (결과 열람 후 탐색). 정상 SM 측정만, 손상 정보 없음",
+        "records": HBTA["dev"]["records"],
+        "excluded_until_preregistration": "SM P2 Z 정상 2개 (MVS_P2_UDS_SM_Z_01, _02) 와 SM 손상 32개",
+        "ai1_model": "v1 그대로 (AI1-public-1.1 의 HBTA 모델, 다시 학습하지 않음). NM 으로만 학습했으므로 SM 결과는 참고 결과",
+        "windows": "측정 전체를 10.24초 Window 로 (0초부터). window_start_s = 측정 시작부터의 시간. 사용 구간은 AI② 가 정함",
+        "features": "v1 과 같음 (2–25Hz, AR(5), 1-TAC 3개 묶음, 판정 보류 기준 같음). 1-TAC·v2 모드 기준은 1.1 의 AI① train 그대로",
+        "degradation_seed": f"default_rng([{LIS2DW12['seed']}, 1, 측정 번호, 채널 번호]). 측정 번호는 SM 40개 이름순 11–50 (hbta_sm_id_table)",
+        "sm_id_table": table.to_dict(orient="records"),
+        "windows_by_record": {r: int(n) for r, n in f.groupby("source_record").size().items()},
+        "hold_deg_windows": int(frames["hbta_deg"]["prediction"].eq("판정 보류").sum()),
+        "previously_viewed_sm_records": {
+            "MVS_P2_UDS_SM_Z_01": "2026-11-04 초기 탐색에서 AG05 z 의 47초 구간 20개 RMS·우세 진동수, AG03 z·AG05 z·AG05 y 전체 RMS·P2P·피크 진동수를 봄 (확인용으로 남길 측정)",
+            "MVS_P1_UDS_SM_Y_01": "2026-11-04 초기 탐색에서 AG03 z·AG05 z·AG05 y 전체 RMS·P2P·피크 진동수를 봄 (개발용)",
+            "damage_sm_records": "손상 SM 측정은 값을 본 적 없음",
+        },
+        "sweep_source": "'2→46→2Hz' 는 문서가 아니라 위 MVS_P2_UDS_SM_Z_01 탐색에서 47초 구간별 우세 진동수 (6.8, 2.2, 3.0, 4.6, 6.6, 7.4, 12.1, 15.2, 24.3, 39.5, 46.2, 39.4, 25.7, 23.0, 12.5, 9.4, 6.8, 5.4, 3.8, 2.6Hz) 를 본 대략값. 스윕 시작 시각·속도·선형/로그 여부는 모름",
+    }
+
+
+def export_public(stage="1.1"):
+    names, out_dir, version, select = PUBLIC_STAGES[stage]
+    out_dir.mkdir(parents=True, exist_ok=True)
     frames, labels = {}, []
-    for name in PUBLIC_DATASETS:
+    for name in names:
         exps = public_experiments(name)
+        exps = exps[select(exps)]
         labels.append(exps.drop(columns=[c for c in ("file", "record_id", "damage_type", "severity_level", "load_position", "bridge_type") if c in exps]))
         for source in ("public_raw", "public_deg"):
-            out = public_results(name, source, exps)
+            out = public_results(name, source, exps, version)
             key = f"{name}_{'raw' if source == 'public_raw' else 'deg'}"
             frames[key] = out
-            out.to_csv(PUBLIC_OUT / f"{name}_anomaly_results_{key.rsplit('_', 1)[1]}.csv", index=False, encoding="utf-8-sig")
-    pd.concat(labels, ignore_index=True).to_csv(PUBLIC_OUT / "experiment_labels.csv", index=False, encoding="utf-8-sig")
-    public_column_guide(frames).to_csv(PUBLIC_OUT / "column_guide.csv", index=False, encoding="utf-8-sig")
-    public_sensor_info().to_csv(PUBLIC_OUT / "sensor_info.csv", index=False, encoding="utf-8-sig")
-    prov = public_provenance(frames)
-    (PUBLIC_OUT / "data_provenance.json").write_text(json.dumps(prov, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"공개 데이터 전달 파일 → {PUBLIC_OUT}")
-    for f in sorted(PUBLIC_OUT.iterdir()):
+            out.to_csv(out_dir / f"{name}_anomaly_results_{key.rsplit('_', 1)[1]}.csv", index=False, encoding="utf-8-sig")
+    pd.concat(labels, ignore_index=True).to_csv(out_dir / "experiment_labels.csv", index=False, encoding="utf-8-sig")
+    public_column_guide(frames).to_csv(out_dir / "column_guide.csv", index=False, encoding="utf-8-sig")
+    info = public_sensor_info()
+    info[info["dataset"].isin(names)].to_csv(out_dir / "sensor_info.csv", index=False, encoding="utf-8-sig")
+    prov = public_provenance(frames) if stage == "1.1" else {**dev_provenance(frames), "base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"}
+    (out_dir / "data_provenance.json").write_text(json.dumps(prov, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"공개 데이터 전달 파일 ({version}) → {out_dir}")
+    for f in sorted(out_dir.iterdir()):
         print(f"  {f.name:<44} {f.stat().st_size / 1024:>10,.0f} KB")
-    for key in ("ponte_moesa_raw", "ponte_moesa_deg", "hbta_raw", "hbta_deg", "old_ada_raw", "old_ada_deg"):
+    for key in [k for k in frames if k.endswith("_deg")]:
         a, b = frames[key.rsplit("_", 1)[0] + "_raw"], frames[key]
         same = a[["experiment_id", "window_start_us"]].equals(b[["experiment_id", "window_start_us"]])
         print(f"  {key}: Window {len(b):,}개, 원본과 같은 키·순서: {same}")
@@ -749,6 +795,8 @@ if __name__ == "__main__":
     import sys
 
     if sys.argv[1:] == ["public"]:
-        export_public()
+        export_public("1.1")
+    elif sys.argv[1:] == ["public-dev"]:
+        export_public("1.2-dev")
     else:
         main()

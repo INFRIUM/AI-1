@@ -78,12 +78,15 @@ def to_frame(signals, t_us, fs, sat=None):
 
 
 def write_dataset(name, records, experiments, sensors):
-    """records: [(record_id, {(sensor_id, axis): 원본 배열}, t_us, fs)] → public_raw / public_deg 두 벌 저장"""
+    """records: [(record_id, {(sensor_id, axis): 원본 배열}, t_us, fs[, 측정 번호])] → public_raw / public_deg 두 벌 저장.
+    측정 번호(열화 난수에 쓰임)를 주지 않으면 목록 순서 1, 2, ..."""
     out = {src: ROOT / "data" / "raw" / src / name for src in ("public_raw", "public_deg")}
     for d in out.values():
         d.mkdir(parents=True, exist_ok=True)
     sat_total = 0
-    for r_no, (rid, signals, t_us, fs) in enumerate(records, start=1):
+    for i, rec in enumerate(records, start=1):
+        rid, signals, t_us, fs = rec[:4]
+        r_no = rec[4] if len(rec) > 4 else i
         to_frame(signals, t_us, fs).to_parquet(out["public_raw"] / f"{rid}.parquet", index=False)
         deg, sat = {}, {}
         for c_no, (key, v) in enumerate(signals.items(), start=1):
@@ -130,44 +133,66 @@ def hbta_blocks(state, n_windows):
     return blocks
 
 
-def hbta_check_records(n_existing):
-    """확인용 새 측정 (AI1-public-1.2). 사전 등록서가 없으면 아무것도 하지 않는다.
-    측정 ID 는 HBTA_C_xx (기존 HBTA_R_xx 와 별도), 실험 ID 는 기존 다음 번호, 열화 난수 측정 번호는 11부터."""
+HBTA_N_NM_EXPERIMENTS = 18   # AI1-public-1.1 의 HBTA 실험 수 (HBTA_0001–0018, 바꾸지 않음)
+
+
+def hbta_sm_table():
+    """스윕 가진(SM) 측정 40개의 고정 번호표. 열화 난수 측정 번호 = 이름순 11–50,
+    record_id·experiment_id = 시드 고정 순열 (이름 순서가 ID 순서에 드러나지 않게)"""
     import h5py
 
-    chk = HBTA["check"]
-    if not chk["records"]:
-        return [], []
-    if not chk["preregistration"] or chk["steady_s"] is None:
+    with h5py.File(ORIGINAL_DIR / HBTA["file"], "r") as f:
+        names = sorted(n for n in f if "_SM_" in n)
+    order = np.random.default_rng([LIS2DW12["seed"], 102]).permutation(len(names)) + 1
+    return pd.DataFrame({"source_record": names, "noise_record_no": np.arange(11, 11 + len(names)),
+                         "record_id": [f"HBTA_C_{k:02d}" for k in order],
+                         "experiment_id": [f"HBTA_{HBTA_N_NM_EXPERIMENTS + k:04d}" for k in order]})
+
+
+def hbta_extra_records():
+    """개발용(정상 SM 6개, 항상 처리)과 확인용(사전 등록서가 있을 때만) SM 측정. 번호·ID 는 hbta_sm_table 로 고정."""
+    import h5py
+
+    dev, chk = HBTA["dev"]["records"], HBTA["check"]
+    if chk["records"] and (not chk["preregistration"] or chk["steady_s"] is None):
         raise SystemExit("HBTA 확인용 측정: AI② 사전 등록서(preregistration)와 구간(steady_s)을 config 에 적은 뒤 실행하세요.")
+    targets = [(n, "개발용") for n in dev] + [(n, "확인용") for n in chk["records"]]
+    if not targets:
+        return [], []
+    table = hbta_sm_table().set_index("source_record")
+    out = ROOT / "results" / "public"
+    out.mkdir(parents=True, exist_ok=True)
+    table.reset_index().to_csv(out / "hbta_sm_id_table.csv", index=False, encoding="utf-8-sig")
     fs, win = HBTA["sample_rate_hz"], HBTA["window_s"]
-    t0_s, t1_s = chk["steady_s"]
-    n_windows = int((t1_s - t0_s) // win)
-    rec_ids = neutral_ids("HBTA_C", len(chk["records"]), salt=102)
     records, rows = [], []
     with h5py.File(ORIGINAL_DIR / HBTA["file"], "r") as f:
-        for k, (rid, name) in enumerate(zip(rec_ids, chk["records"])):
+        for name, status in targets:
+            ids = table.loc[name]
             g = f[name]
             a = g.attrs
             signals = {(sid, axis): g["acceleration"][src][axis.lower()][()].astype(float)
                        for sid, src in HBTA["sensors"].items() for axis in HBTA["axes"]}
             n = len(next(iter(signals.values())))
             base_us = date_to_us(str(a["date"]))
-            records.append((rid, signals, base_us + np.round(np.arange(n) * 1e6 / fs).astype(np.int64), fs))
+            records.append((ids.record_id, signals, base_us + np.round(np.arange(n) * 1e6 / fs).astype(np.int64), fs,
+                            int(ids.noise_record_no)))
+            # 개발용: 측정 전체를 Window 로 (사용 구간은 AI② 가 탐색 후 정함). 확인용: 사전 등록서의 구간
+            t0_s, t1_s = (0.0, n / fs) if status == "개발용" else chk["steady_s"]
+            nw = int((t1_s - t0_s) // win)
             parts = name.split("_")
             state = str(a["damage_state"])
             rows.append({
-                "experiment_id": f"HBTA_{n_existing + k + 1:04d}",
-                "record_id": rid, "source_record": name, "file": f"{rid}.parquet",
-                "start_us": int(base_us + round(t0_s * 1e6)), "end_us": int(base_us + round((t0_s + n_windows * win) * 1e6)),
-                "n_windows": n_windows, "split": chk["split"].get(name, "test"), "cv_group": "",
+                "experiment_id": ids.experiment_id, "record_id": ids.record_id, "source_record": name,
+                "file": f"{ids.record_id}.parquet",
+                "start_us": int(base_us + round(t0_s * 1e6)), "end_us": int(base_us + round((t0_s + nw * win) * 1e6)),
+                "n_windows": nw, "split": "dev" if status == "개발용" else chk["split"].get(name, "test"), "cv_group": "",
                 "bridge_type": "TRUSS", "damage_type": "D0" if state == "UDS" else "DMG", "severity_level": "",
-                "damage_stage": state, "label_status": "확인용",
+                "damage_stage": state, "label_status": status,
                 "condition": f"{parts[3]}_{parts[1]}_{parts[4]}", "load_position": "",
                 "temperature_c": int(a["temperature"]), "train_passing": str(a["train_passing"]),
                 "wind_range": str(a["wind_range"]), "date": str(a["date"]),
             })
-    print(f"[hbta] 확인용 측정 {len(records)}개 추가 (사전 등록서: {chk['preregistration']})")
+    print(f"[hbta] SM 측정 추가: 개발용 {len(dev)}개, 확인용 {len(chk['records'])}개 (번호표 → {out / 'hbta_sm_id_table.csv'})")
     return records, rows
 
 
@@ -210,10 +235,10 @@ def convert_hbta():
 
     exps = pd.DataFrame(rows).sort_values(["record_id", "start_us"], ignore_index=True)
     exps.insert(0, "experiment_id", [f"HBTA_{i:04d}" for i in range(1, len(exps) + 1)])
-    check_records, check_rows = hbta_check_records(len(exps))
-    records += check_records
-    if check_rows:
-        exps = pd.concat([exps, pd.DataFrame(check_rows)], ignore_index=True)
+    extra_records, extra_rows = hbta_extra_records()
+    records += extra_records
+    if extra_rows:
+        exps = pd.concat([exps, pd.DataFrame(extra_rows)], ignore_index=True)
     sensors = pd.DataFrame([
         {"sensor_id": sid, "sensor_type": "acceleration", "device": "Dytran (HBTA 원본) / LIS2DW12 (열화본)",
          "source_sensor": src, "sensor_location": loc, "x_m": x, "x_ratio": xr, "y_m": 2.25,

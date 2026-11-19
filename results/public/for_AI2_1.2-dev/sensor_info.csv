@@ -1,0 +1,3 @@
+﻿dataset,sensor_id,결과파일_약칭,sensor_type,device,source_sensor,sensor_location,x_m,x_ratio,y_m,sample_rate_hz,unit,axes,HW 대응
+hbta,HBTA_ACC_01,acc01,acceleration,Dytran (HBTA 원본) / LIS2DW12 (열화본),AG03,L/4 부근,-7.0,0.3,2.25,100,m/s^2,"Y,Z",HW L/4 가속도계에 대응
+hbta,HBTA_ACC_02,acc02,acceleration,Dytran (HBTA 원본) / LIS2DW12 (열화본),AG05,L/2,0.0,0.5,2.25,100,m/s^2,"Y,Z",HW L/2 가속도계에 대응

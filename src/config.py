@@ -421,12 +421,19 @@ HBTA = {
     "window_s": 10.24,           # 기본 Feature·AR(5) Window (겹침 없음)
     # 정상(UDS) 측정마다 Window 를 시간 순서대로 나눈 개수: AI① train / AI① val / AI② 보정 / test(블록 2개)
     "uds_split_windows": {"train": 33, "val": 16, "ai2_calib": 16, "test": (9, 8)},
-    # 확인용 새 측정 (INFRIUM/AI-2#15, AI1-public-1.2). AI② Truss v2 사전 등록서가 Push 된 뒤에만 채운다.
-    # preregistration 이 비어 있으면 convert_public.py 가 새 측정을 변환하지 않는다 (사전 등록 전 결과 방지)
-    # 기존 10개 측정·실험 ID·열화 난수는 바뀌지 않는다: 새 측정은 측정 번호 11부터, 실험 ID 는 기존 다음 번호부터
+    # 스윕 가진(SM) 측정 40개의 번호·ID 는 처리 전에 고정한다 (INFRIUM/AI-2#15, AI② 2026-11-19 요청)
+    #   열화 난수 측정 번호: SM 측정 이름 알파벳 순서대로 11–50 (기존 NM 10개는 1–10 그대로)
+    #   record_id HBTA_C_01–40, experiment_id HBTA_0019–0058: 시드 고정 순열 (정답이 드러나지 않게). 표는 results/public/hbta_sm_id_table.csv
+    # 개발용 (AI1-public-1.2-dev): 정상 SM 6개. 사전 등록 전에 처리해도 되는 측정 (손상 정보 없음, P2 Z 정상 2개 제외)
+    "dev": {
+        "records": ["MVS_P1_UDS_SM_Y_01", "MVS_P1_UDS_SM_Y_02", "MVS_P1_UDS_SM_Z_01", "MVS_P1_UDS_SM_Z_02",
+                    "MVS_P2_UDS_SM_Y_01", "MVS_P2_UDS_SM_Y_02"],
+    },
+    # 확인용 (AI1-public-1.2): AI② Truss v2 사전 등록서가 Push 된 뒤에만 채운다.
+    # preregistration 이 비어 있으면 convert_public.py 가 확인용 측정을 변환하지 않는다 (사전 등록 전 결과 방지)
     "check": {
         "preregistration": "",        # 사전 등록서 위치 (예: INFRIUM/AI-2 커밋 주소)
-        "records": [],                # 사전 등록서에 적힌 측정 이름 (순서 = 열화 난수 측정 번호 11, 12, ...)
+        "records": [],                # 사전 등록서에 적힌 측정 이름
         "split": {},                  # 측정 이름 → ai1_split (사전 등록서대로, 없으면 "test")
         "steady_s": None,             # 사용할 구간 [초] (사전 등록서대로)
     },

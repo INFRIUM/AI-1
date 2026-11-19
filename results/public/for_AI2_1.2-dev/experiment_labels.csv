@@ -1,0 +1,7 @@
+﻿dataset,experiment_id,source_record,start_us,end_us,n_windows,ai1_split,cv_group,damage_stage,label_status,condition,temperature_c,train_passing,wind_range,date,stage_description
+hbta,HBTA_0035,MVS_P1_UDS_SM_Y_01,1600819200000000,1600819814400000,60,dev,,UDS,개발용,SM_P1_Y,15,No,Medium,2020-09-23,손상 없음
+hbta,HBTA_0027,MVS_P1_UDS_SM_Y_02,1600732800000000,1600733414400000,60,dev,,UDS,개발용,SM_P1_Y,11,Yes,Low,2020-09-22,손상 없음
+hbta,HBTA_0037,MVS_P1_UDS_SM_Z_01,1600819200000000,1600819814400000,60,dev,,UDS,개발용,SM_P1_Z,15,No,Medium,2020-09-23,손상 없음
+hbta,HBTA_0034,MVS_P1_UDS_SM_Z_02,1600732800000000,1600733424640000,61,dev,,UDS,개발용,SM_P1_Z,11,Yes,Low,2020-09-22,손상 없음
+hbta,HBTA_0021,MVS_P2_UDS_SM_Y_01,1601164800000000,1601165414400000,60,dev,,UDS,개발용,SM_P2_Y,14,No,Low,2020-09-27,손상 없음
+hbta,HBTA_0019,MVS_P2_UDS_SM_Y_02,1600732800000000,1600733424640000,61,dev,,UDS,개발용,SM_P2_Y,10,Yes,Low,2020-09-22,손상 없음

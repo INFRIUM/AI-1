@@ -7,7 +7,7 @@ window_end_us,Window 끝 시각 µs,µs,참고,"ponte_moesa_raw,ponte_moesa_deg,
 damage_stage,손상 단계 라벨 (정답),,"라벨, 모델 입력 금지","ponte_moesa_raw,ponte_moesa_deg,hbta_raw,hbta_deg,old_ada_raw,old_ada_deg"
 stage_description,손상 단계 설명,,참고,"ponte_moesa_raw,ponte_moesa_deg,hbta_raw,hbta_deg,old_ada_raw,old_ada_deg"
 label_status,"확실 / 참고 / 속도 영향 확인용 (참고, Old ADA 30·50km/h 정상 주행) / 참고 (회복 불완전). 주 평가는 '확실'만",,라벨,"ponte_moesa_raw,ponte_moesa_deg,hbta_raw,hbta_deg,old_ada_raw,old_ada_deg"
-ai1_split,AI① 분할: train / val / ai2_calib(AI② T1 보정) / test / session(세션 차이 확인용),,분할,"ponte_moesa_raw,ponte_moesa_deg,hbta_raw,hbta_deg,old_ada_raw,old_ada_deg"
+ai1_split,"AI① 분할: train / val / ai2_calib(AI② T1 보정) / test / session(세션 차이 확인용) / dev(개발용, 학습·평가 구분 없음)",,분할,"ponte_moesa_raw,ponte_moesa_deg,hbta_raw,hbta_deg,old_ada_raw,old_ada_deg"
 cv_group,손상 상태 교차 검증 묶음 A / B (Ponte Moesa),,분할,"ponte_moesa_raw,ponte_moesa_deg,hbta_raw,hbta_deg,old_ada_raw,old_ada_deg"
 subset,"보고용 구분: 작업전 / 작업중 (DS2 test), 저녁 / 낮 (세션)",,분할,"ponte_moesa_raw,ponte_moesa_deg"
 source_record,원본 측정 이름. 정답이 들어 있음,,모델 입력 금지,"ponte_moesa_raw,ponte_moesa_deg,hbta_raw,hbta_deg,old_ada_raw,old_ada_deg"
