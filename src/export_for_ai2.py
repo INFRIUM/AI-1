@@ -768,7 +768,9 @@ def hbta_as_dev(frames):
                 rows.append({"experiment_id": r.experiment_id, "source_record": rec, "window_start_us": r.window_start_us,
                              "window_start_s": r.window_start_s, "as_axis": axis.upper(),
                              "as_dom_freq_hz": round(float(peak), 3), "as_rms_m_s2": round(float(seg.std()), 6)})
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    order = win[["experiment_id", "window_start_us"]].reset_index(drop=True)   # 결과 파일과 같은 행 순서
+    return order.merge(out, on=["experiment_id", "window_start_us"], how="left")[out.columns]
 
 
 def dev_provenance(frames):
