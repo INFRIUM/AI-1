@@ -176,8 +176,8 @@ def hbta_extra_records():
             base_us = date_to_us(str(a["date"]))
             records.append((ids.record_id, signals, base_us + np.round(np.arange(n) * 1e6 / fs).astype(np.int64), fs,
                             int(ids.noise_record_no)))
-            # 개발용: 측정 전체를 Window 로 (사용 구간은 AI② 가 탐색 후 정함). 확인용: 사전 등록서의 구간
-            t0_s, t1_s = (0.0, n / fs) if status == "개발용" else chk["steady_s"]
+            # 개발용: 측정 전체를 Window 로 (사용 구간은 AI② 가 탐색 후 정함). 확인용: 사전 등록서의 구간 ("full" = 측정 전체)
+            t0_s, t1_s = (0.0, n / fs) if status == "개발용" or chk["steady_s"] == "full" else chk["steady_s"]
             nw = int((t1_s - t0_s) // win)
             parts = name.split("_")
             state = str(a["damage_state"])

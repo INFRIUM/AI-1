@@ -1,0 +1,312 @@
+{
+  "generated_at": "2026-11-19T16:35:01",
+  "model_version": "AI1-public-1.2",
+  "purpose": "Truss v2 1회 평가용 확인용 측정 (사전 등록서 Push 뒤 처리)",
+  "preregistration": {
+    "document": "INFRIUM/AI-2@11c1a8b4caf77c5d7f75aa49b2c116e2ad9c80ad docs/AI2_PUBLIC_GRADE_PREREG_v2_TRUSS.md",
+    "sha256": "72266946017f9fe10d94a08a26819eb4dcb322a8b821dda9dde505f091b66499",
+    "section": "11. AI①에 요청하는 처리 (AI1-public-1.2)",
+    "checked": "처리 전에 AI① 이 문서를 받아 SHA-256 일치 확인"
+  },
+  "records": [
+    "MVS_P2_UDS_SM_Z_01",
+    "MVS_P2_UDS_SM_Z_02",
+    "MVS_P2_DS1_SM_Z_01",
+    "MVS_P2_DS2_SM_Z_01",
+    "MVS_P2_DS3_SM_Z_01",
+    "MVS_P2_DS4_SM_Z_01",
+    "MVS_P2_DS5_SM_Z_01",
+    "MVS_P2_DS6_SM_Z_01",
+    "MVS_P2_DS7_SM_Z_01",
+    "MVS_P2_DS8_SM_Z_01",
+    "MVS_P1_DS1_SM_Y_01",
+    "MVS_P1_DS2_SM_Y_01",
+    "MVS_P1_DS3_SM_Y_01",
+    "MVS_P1_DS4_SM_Y_01",
+    "MVS_P1_DS5_SM_Y_01",
+    "MVS_P1_DS6_SM_Y_01",
+    "MVS_P1_DS7_SM_Y_01",
+    "MVS_P1_DS8_SM_Y_01",
+    "MVS_P1_DS1_SM_Z_01",
+    "MVS_P1_DS2_SM_Z_01",
+    "MVS_P1_DS3_SM_Z_01",
+    "MVS_P1_DS4_SM_Z_01",
+    "MVS_P1_DS5_SM_Z_01",
+    "MVS_P1_DS6_SM_Z_01",
+    "MVS_P1_DS7_SM_Z_01",
+    "MVS_P1_DS8_SM_Z_01",
+    "MVS_P2_DS1_SM_Y_01",
+    "MVS_P2_DS2_SM_Y_01",
+    "MVS_P2_DS3_SM_Y_01",
+    "MVS_P2_DS4_SM_Y_01",
+    "MVS_P2_DS5_SM_Y_01",
+    "MVS_P2_DS6_SM_Y_01",
+    "MVS_P2_DS7_SM_Y_01",
+    "MVS_P2_DS8_SM_Y_01"
+  ],
+  "ai1_model": "v1 그대로 (AI1-public-1.1 의 HBTA 모델, 다시 학습하지 않음, 기준값 그대로). NM 으로만 학습했으므로 SM 결과는 참고 결과",
+  "model_files_unchanged_since": {
+    "models/public_deg/hbta/isolation_forest.joblib": "2026-11-15T15:46:29",
+    "models/public_deg/hbta/isolation_forest_v2.joblib": "2026-11-18T12:12:00",
+    "models/public_deg/hbta/split.csv": "2026-11-18T12:12:00",
+    "models/public_raw/hbta/isolation_forest.joblib": "2026-11-15T15:44:56",
+    "models/public_raw/hbta/isolation_forest_v2.joblib": "2026-11-18T12:11:37",
+    "models/public_raw/hbta/split.csv": "2026-11-18T12:11:37"
+  },
+  "windows": "1.2-dev 와 같음: 측정 전체를 0초부터 10.24초 Window 로. window_start_s = 측정 시작부터의 시간",
+  "features": "1.2-dev 와 같음 (2–25Hz, AR(5), 1-TAC 3개 묶음, 판정 보류 기준 같음). 1-TAC·v2 모드 기준은 1.1 의 AI① train 그대로",
+  "labels": "ai1_split = test, label_status = 확인용, condition = SM_<가진 위치>_<가진 방향> (예: SM_P2_Z)",
+  "degradation_seed": "v1 규칙 그대로 (잡음 → 14bit → ±2g). default_rng([20261109, 1, 측정 번호, 채널 번호]). 측정 번호는 SM 40개 이름순 11–50 (hbta_sm_id_table, 1.2-dev 와 같은 고정표)",
+  "sm_id_table": [
+    {
+      "source_record": "MVS_P1_DS1_SM_Y_01",
+      "noise_record_no": 11,
+      "record_id": "HBTA_C_33",
+      "experiment_id": "HBTA_0051"
+    },
+    {
+      "source_record": "MVS_P1_DS1_SM_Z_01",
+      "noise_record_no": 12,
+      "record_id": "HBTA_C_37",
+      "experiment_id": "HBTA_0055"
+    },
+    {
+      "source_record": "MVS_P1_DS2_SM_Y_01",
+      "noise_record_no": 13,
+      "record_id": "HBTA_C_13",
+      "experiment_id": "HBTA_0031"
+    },
+    {
+      "source_record": "MVS_P1_DS2_SM_Z_01",
+      "noise_record_no": 14,
+      "record_id": "HBTA_C_27",
+      "experiment_id": "HBTA_0045"
+    },
+    {
+      "source_record": "MVS_P1_DS3_SM_Y_01",
+      "noise_record_no": 15,
+      "record_id": "HBTA_C_15",
+      "experiment_id": "HBTA_0033"
+    },
+    {
+      "source_record": "MVS_P1_DS3_SM_Z_01",
+      "noise_record_no": 16,
+      "record_id": "HBTA_C_20",
+      "experiment_id": "HBTA_0038"
+    },
+    {
+      "source_record": "MVS_P1_DS4_SM_Y_01",
+      "noise_record_no": 17,
+      "record_id": "HBTA_C_39",
+      "experiment_id": "HBTA_0057"
+    },
+    {
+      "source_record": "MVS_P1_DS4_SM_Z_01",
+      "noise_record_no": 18,
+      "record_id": "HBTA_C_14",
+      "experiment_id": "HBTA_0032"
+    },
+    {
+      "source_record": "MVS_P1_DS5_SM_Y_01",
+      "noise_record_no": 19,
+      "record_id": "HBTA_C_12",
+      "experiment_id": "HBTA_0030"
+    },
+    {
+      "source_record": "MVS_P1_DS5_SM_Z_01",
+      "noise_record_no": 20,
+      "record_id": "HBTA_C_07",
+      "experiment_id": "HBTA_0025"
+    },
+    {
+      "source_record": "MVS_P1_DS6_SM_Y_01",
+      "noise_record_no": 21,
+      "record_id": "HBTA_C_21",
+      "experiment_id": "HBTA_0039"
+    },
+    {
+      "source_record": "MVS_P1_DS6_SM_Z_01",
+      "noise_record_no": 22,
+      "record_id": "HBTA_C_24",
+      "experiment_id": "HBTA_0042"
+    },
+    {
+      "source_record": "MVS_P1_DS7_SM_Y_01",
+      "noise_record_no": 23,
+      "record_id": "HBTA_C_28",
+      "experiment_id": "HBTA_0046"
+    },
+    {
+      "source_record": "MVS_P1_DS7_SM_Z_01",
+      "noise_record_no": 24,
+      "record_id": "HBTA_C_04",
+      "experiment_id": "HBTA_0022"
+    },
+    {
+      "source_record": "MVS_P1_DS8_SM_Y_01",
+      "noise_record_no": 25,
+      "record_id": "HBTA_C_02",
+      "experiment_id": "HBTA_0020"
+    },
+    {
+      "source_record": "MVS_P1_DS8_SM_Z_01",
+      "noise_record_no": 26,
+      "record_id": "HBTA_C_26",
+      "experiment_id": "HBTA_0044"
+    },
+    {
+      "source_record": "MVS_P2_DS1_SM_Y_01",
+      "noise_record_no": 31,
+      "record_id": "HBTA_C_06",
+      "experiment_id": "HBTA_0024"
+    },
+    {
+      "source_record": "MVS_P2_DS1_SM_Z_01",
+      "noise_record_no": 32,
+      "record_id": "HBTA_C_25",
+      "experiment_id": "HBTA_0043"
+    },
+    {
+      "source_record": "MVS_P2_DS2_SM_Y_01",
+      "noise_record_no": 33,
+      "record_id": "HBTA_C_10",
+      "experiment_id": "HBTA_0028"
+    },
+    {
+      "source_record": "MVS_P2_DS2_SM_Z_01",
+      "noise_record_no": 34,
+      "record_id": "HBTA_C_22",
+      "experiment_id": "HBTA_0040"
+    },
+    {
+      "source_record": "MVS_P2_DS3_SM_Y_01",
+      "noise_record_no": 35,
+      "record_id": "HBTA_C_40",
+      "experiment_id": "HBTA_0058"
+    },
+    {
+      "source_record": "MVS_P2_DS3_SM_Z_01",
+      "noise_record_no": 36,
+      "record_id": "HBTA_C_18",
+      "experiment_id": "HBTA_0036"
+    },
+    {
+      "source_record": "MVS_P2_DS4_SM_Y_01",
+      "noise_record_no": 37,
+      "record_id": "HBTA_C_34",
+      "experiment_id": "HBTA_0052"
+    },
+    {
+      "source_record": "MVS_P2_DS4_SM_Z_01",
+      "noise_record_no": 38,
+      "record_id": "HBTA_C_23",
+      "experiment_id": "HBTA_0041"
+    },
+    {
+      "source_record": "MVS_P2_DS5_SM_Y_01",
+      "noise_record_no": 39,
+      "record_id": "HBTA_C_29",
+      "experiment_id": "HBTA_0047"
+    },
+    {
+      "source_record": "MVS_P2_DS5_SM_Z_01",
+      "noise_record_no": 40,
+      "record_id": "HBTA_C_38",
+      "experiment_id": "HBTA_0056"
+    },
+    {
+      "source_record": "MVS_P2_DS6_SM_Y_01",
+      "noise_record_no": 41,
+      "record_id": "HBTA_C_31",
+      "experiment_id": "HBTA_0049"
+    },
+    {
+      "source_record": "MVS_P2_DS6_SM_Z_01",
+      "noise_record_no": 42,
+      "record_id": "HBTA_C_05",
+      "experiment_id": "HBTA_0023"
+    },
+    {
+      "source_record": "MVS_P2_DS7_SM_Y_01",
+      "noise_record_no": 43,
+      "record_id": "HBTA_C_30",
+      "experiment_id": "HBTA_0048"
+    },
+    {
+      "source_record": "MVS_P2_DS7_SM_Z_01",
+      "noise_record_no": 44,
+      "record_id": "HBTA_C_08",
+      "experiment_id": "HBTA_0026"
+    },
+    {
+      "source_record": "MVS_P2_DS8_SM_Y_01",
+      "noise_record_no": 45,
+      "record_id": "HBTA_C_35",
+      "experiment_id": "HBTA_0053"
+    },
+    {
+      "source_record": "MVS_P2_DS8_SM_Z_01",
+      "noise_record_no": 46,
+      "record_id": "HBTA_C_11",
+      "experiment_id": "HBTA_0029"
+    },
+    {
+      "source_record": "MVS_P2_UDS_SM_Z_01",
+      "noise_record_no": 49,
+      "record_id": "HBTA_C_36",
+      "experiment_id": "HBTA_0054"
+    },
+    {
+      "source_record": "MVS_P2_UDS_SM_Z_02",
+      "noise_record_no": 50,
+      "record_id": "HBTA_C_32",
+      "experiment_id": "HBTA_0050"
+    }
+  ],
+  "windows_by_record": {
+    "MVS_P1_DS1_SM_Y_01": 60,
+    "MVS_P1_DS1_SM_Z_01": 60,
+    "MVS_P1_DS2_SM_Y_01": 60,
+    "MVS_P1_DS2_SM_Z_01": 60,
+    "MVS_P1_DS3_SM_Y_01": 60,
+    "MVS_P1_DS3_SM_Z_01": 60,
+    "MVS_P1_DS4_SM_Y_01": 60,
+    "MVS_P1_DS4_SM_Z_01": 60,
+    "MVS_P1_DS5_SM_Y_01": 60,
+    "MVS_P1_DS5_SM_Z_01": 60,
+    "MVS_P1_DS6_SM_Y_01": 60,
+    "MVS_P1_DS6_SM_Z_01": 60,
+    "MVS_P1_DS7_SM_Y_01": 60,
+    "MVS_P1_DS7_SM_Z_01": 60,
+    "MVS_P1_DS8_SM_Y_01": 60,
+    "MVS_P1_DS8_SM_Z_01": 60,
+    "MVS_P2_DS1_SM_Y_01": 62,
+    "MVS_P2_DS1_SM_Z_01": 60,
+    "MVS_P2_DS2_SM_Y_01": 60,
+    "MVS_P2_DS2_SM_Z_01": 60,
+    "MVS_P2_DS3_SM_Y_01": 60,
+    "MVS_P2_DS3_SM_Z_01": 61,
+    "MVS_P2_DS4_SM_Y_01": 60,
+    "MVS_P2_DS4_SM_Z_01": 60,
+    "MVS_P2_DS5_SM_Y_01": 60,
+    "MVS_P2_DS5_SM_Z_01": 60,
+    "MVS_P2_DS6_SM_Y_01": 60,
+    "MVS_P2_DS6_SM_Z_01": 60,
+    "MVS_P2_DS7_SM_Y_01": 61,
+    "MVS_P2_DS7_SM_Z_01": 61,
+    "MVS_P2_DS8_SM_Y_01": 60,
+    "MVS_P2_DS8_SM_Z_01": 61,
+    "MVS_P2_UDS_SM_Z_01": 60,
+    "MVS_P2_UDS_SM_Z_02": 60
+  },
+  "hold_deg_windows": 933,
+  "as": {
+    "file": "hbta_as.csv",
+    "method": "1.2-dev 의 hbta_as_dev.csv 와 같음 (dev 기록 as_dev 참고)",
+    "signal": "AS (가진기 가속도계 PCB 356A16), 가진 방향 1축, 원본 (열화 없음)",
+    "rms": "Window 평균을 뺀 표준편차 (대역 필터 없음)",
+    "dom_freq": "Welch (hann, nperseg 512, noverlap 256), 1–50Hz 안 최대 피크, 포물선 보간"
+  },
+  "unchanged_outputs": "AI1-public-1.1 (NM 10개) 과 AI1-public-1.2-dev (개발용 6개) 결과는 이번 처리 뒤에도 값 그대로",
+  "base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"
+}

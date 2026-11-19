@@ -432,10 +432,15 @@ HBTA = {
     # 확인용 (AI1-public-1.2): AI② Truss v2 사전 등록서가 Push 된 뒤에만 채운다.
     # preregistration 이 비어 있으면 convert_public.py 가 확인용 측정을 변환하지 않는다 (사전 등록 전 결과 방지)
     "check": {
-        "preregistration": "",        # 사전 등록서 위치 (예: INFRIUM/AI-2 커밋 주소)
-        "records": [],                # 사전 등록서에 적힌 측정 이름
-        "split": {},                  # 측정 이름 → ai1_split (사전 등록서대로, 없으면 "test")
-        "steady_s": None,             # 사용할 구간 [초] (사전 등록서대로)
+        # 사전 등록서 위치와 SHA-256 (AI② Truss v2, 2026-11-19 Push, 11절)
+        "preregistration": "INFRIUM/AI-2@11c1a8b4caf77c5d7f75aa49b2c116e2ad9c80ad docs/AI2_PUBLIC_GRADE_PREREG_v2_TRUSS.md",
+        "preregistration_sha256": "72266946017f9fe10d94a08a26819eb4dcb322a8b821dda9dde505f091b66499",
+        # 사전 등록서 11절의 34개: SM P2 Z (주 평가) 10개 + SM P1 Y·P1 Z·P2 Y 손상 DS1–DS8 각 8개 (보조)
+        "records": ["MVS_P2_UDS_SM_Z_01", "MVS_P2_UDS_SM_Z_02"]
+                   + [f"MVS_P2_DS{k}_SM_Z_01" for k in range(1, 9)]
+                   + [f"MVS_{p}_DS{k}_SM_{ax}_01" for p, ax in (("P1", "Y"), ("P1", "Z"), ("P2", "Y")) for k in range(1, 9)],
+        "split": {},                  # 측정 이름 → ai1_split (사전 등록서: 전부 "test")
+        "steady_s": "full",           # 사용할 구간 [초] 또는 "full" (사전 등록서: 1.2-dev 와 같이 측정 전체를 0초부터)
     },
 }
 

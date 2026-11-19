@@ -734,6 +734,7 @@ PUBLIC_STAGES = {
     # 전달 단계: (데이터셋, 출력 폴더, 버전, 실험 선택)
     "1.1": (PUBLIC_DATASETS, PUBLIC_OUT, MODEL_VERSION, lambda e: ~e["label_status"].isin(["개발용", "확인용"])),
     "1.2-dev": (("hbta",), PUBLIC_OUT.with_name("for_AI2_1.2-dev"), "AI1-public-1.2-dev", lambda e: e["label_status"] == "개발용"),
+    "1.2": (("hbta",), PUBLIC_OUT.with_name("for_AI2_1.2"), "AI1-public-1.2", lambda e: e["label_status"] == "확인용"),
 }
 
 
@@ -741,7 +742,8 @@ AS_WELCH = {"nperseg": 512, "noverlap": 256, "window": "hann", "f_min_hz": 1.0, 
 
 
 def hbta_as_dev(frames):
-    """개발용 SM 6개의 가진기 가속도계(AS) Window 별 우세 진동수·RMS. 원본(열화 없음), 1.2-dev 와 같은 10.24초 Window.
+    """SM 측정의 가진기 가속도계(AS) Window 별 우세 진동수·RMS. 원본(열화 없음), 결과 파일과 같은 10.24초 Window.
+    1.2-dev(개발용 6개) 와 1.2(확인용 34개) 에 같은 방법을 쓴다.
     AS 는 가진 방향 1축 (Y 가진 → y, Z 가진 → z). 평균만 빼고 대역 필터는 쓰지 않음 (스윕이 2–25Hz 밖까지 가므로)"""
     import h5py
     from scipy import signal
@@ -806,6 +808,40 @@ def dev_provenance(frames):
     }
 
 
+def check_provenance(frames):
+    """AI1-public-1.2 기록: 확인용 SM 34개 (AI② Truss v2 사전 등록서 11절)"""
+    from config import HBTA, LIS2DW12
+    root = RESULTS_DIR.parents[1]
+    chk = HBTA["check"]
+    table = pd.read_csv(root / "results" / "public" / "hbta_sm_id_table.csv")
+    f, d = frames["hbta_raw"], frames["hbta_deg"]
+    models = sorted((root / "models" / "public_deg" / "hbta").glob("*")) + sorted((root / "models" / "public_raw" / "hbta").glob("*"))
+    return {
+        "generated_at": datetime.now().isoformat(timespec="seconds"), "model_version": "AI1-public-1.2",
+        "purpose": "Truss v2 1회 평가용 확인용 측정 (사전 등록서 Push 뒤 처리)",
+        "preregistration": {"document": chk["preregistration"], "sha256": chk["preregistration_sha256"],
+                            "section": "11. AI①에 요청하는 처리 (AI1-public-1.2)",
+                            "checked": "처리 전에 AI① 이 문서를 받아 SHA-256 일치 확인"},
+        "records": chk["records"],
+        "ai1_model": "v1 그대로 (AI1-public-1.1 의 HBTA 모델, 다시 학습하지 않음, 기준값 그대로). NM 으로만 학습했으므로 SM 결과는 참고 결과",
+        "model_files_unchanged_since": {str(p.relative_to(root)).replace("\\", "/"): datetime.fromtimestamp(p.stat().st_mtime).isoformat(timespec="seconds")
+                                        for p in models if p.is_file()},
+        "windows": "1.2-dev 와 같음: 측정 전체를 0초부터 10.24초 Window 로. window_start_s = 측정 시작부터의 시간",
+        "features": "1.2-dev 와 같음 (2–25Hz, AR(5), 1-TAC 3개 묶음, 판정 보류 기준 같음). 1-TAC·v2 모드 기준은 1.1 의 AI① train 그대로",
+        "labels": "ai1_split = test, label_status = 확인용, condition = SM_<가진 위치>_<가진 방향> (예: SM_P2_Z)",
+        "degradation_seed": f"v1 규칙 그대로 (잡음 → 14bit → ±2g). default_rng([{LIS2DW12['seed']}, 1, 측정 번호, 채널 번호]). 측정 번호는 SM 40개 이름순 11–50 (hbta_sm_id_table, 1.2-dev 와 같은 고정표)",
+        "sm_id_table": table[table["source_record"].isin(chk["records"])].to_dict(orient="records"),
+        "windows_by_record": {r: int(n) for r, n in f.groupby("source_record").size().items()},
+        "hold_deg_windows": int(d["prediction"].eq("판정 보류").sum()),
+        "as": {"file": "hbta_as.csv", "method": "1.2-dev 의 hbta_as_dev.csv 와 같음 (dev 기록 as_dev 참고)",
+               "signal": "AS (가진기 가속도계 PCB 356A16), 가진 방향 1축, 원본 (열화 없음)",
+               "rms": "Window 평균을 뺀 표준편차 (대역 필터 없음)",
+               "dom_freq": f"Welch ({AS_WELCH['window']}, nperseg {AS_WELCH['nperseg']}, noverlap {AS_WELCH['noverlap']}), "
+                           f"{AS_WELCH['f_min_hz']:g}–{AS_WELCH['f_max_hz']:g}Hz 안 최대 피크, 포물선 보간"},
+        "unchanged_outputs": "AI1-public-1.1 (NM 10개) 과 AI1-public-1.2-dev (개발용 6개) 결과는 이번 처리 뒤에도 값 그대로",
+    }
+
+
 def export_public(stage="1.1"):
     names, out_dir, version, select = PUBLIC_STAGES[stage]
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -823,10 +859,13 @@ def export_public(stage="1.1"):
     public_column_guide(frames).to_csv(out_dir / "column_guide.csv", index=False, encoding="utf-8-sig")
     info = public_sensor_info()
     info[info["dataset"].isin(names)].to_csv(out_dir / "sensor_info.csv", index=False, encoding="utf-8-sig")
-    if stage == "1.2-dev":
+    if stage in ("1.2-dev", "1.2"):
         frames["hbta_raw"]["window_start_s"]  # 1.2 부터 있는 열
-        hbta_as_dev(frames).to_csv(out_dir / "hbta_as_dev.csv", index=False, encoding="utf-8-sig")
-    prov = public_provenance(frames) if stage == "1.1" else {**dev_provenance(frames), "base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"}
+        as_name = "hbta_as_dev.csv" if stage == "1.2-dev" else "hbta_as.csv"
+        hbta_as_dev(frames).to_csv(out_dir / as_name, index=False, encoding="utf-8-sig")
+    base = {"base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"}
+    prov = (public_provenance(frames) if stage == "1.1" else
+            {**dev_provenance(frames), **base} if stage == "1.2-dev" else {**check_provenance(frames), **base})
     (out_dir / "data_provenance.json").write_text(json.dumps(prov, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"공개 데이터 전달 파일 ({version}) → {out_dir}")
     for f in sorted(out_dir.iterdir()):
@@ -844,5 +883,7 @@ if __name__ == "__main__":
         export_public("1.1")
     elif sys.argv[1:] == ["public-dev"]:
         export_public("1.2-dev")
+    elif sys.argv[1:] == ["public-check"]:
+        export_public("1.2")
     else:
         main()
