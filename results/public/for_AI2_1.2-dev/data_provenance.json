@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-19T09:20:00",
+  "generated_at": "2026-11-19T15:48:50",
   "model_version": "AI1-public-1.2-dev",
   "purpose": "Truss v2 사전 등록 전 개발용 탐색 (결과 열람 후 탐색). 정상 SM 측정만, 손상 정보 없음",
   "records": [
@@ -267,10 +267,18 @@
   },
   "hold_deg_windows": 154,
   "previously_viewed_sm_records": {
-    "MVS_P2_UDS_SM_Z_01": "2026-11-04 초기 탐색에서 AG05 z 의 47초 구간 20개 RMS·우세 진동수, AG03 z·AG05 z·AG05 y 전체 RMS·P2P·피크 진동수를 봄 (확인용으로 남길 측정)",
+    "MVS_P2_UDS_SM_Z_01": "2026-11-04 초기 탐색에서 AG05 z 를 측정 전체 20등분(약 31.2초 구간 20개)한 RMS·우세 진동수, AG03 z·AG05 z·AG05 y 전체 RMS·P2P·피크 진동수를 봄 (확인용으로 남길 측정)",
     "MVS_P1_UDS_SM_Y_01": "2026-11-04 초기 탐색에서 AG03 z·AG05 z·AG05 y 전체 RMS·P2P·피크 진동수를 봄 (개발용)",
     "damage_sm_records": "손상 SM 측정은 값을 본 적 없음"
   },
-  "sweep_source": "'2→46→2Hz' 는 문서가 아니라 위 MVS_P2_UDS_SM_Z_01 탐색에서 47초 구간별 우세 진동수 (6.8, 2.2, 3.0, 4.6, 6.6, 7.4, 12.1, 15.2, 24.3, 39.5, 46.2, 39.4, 25.7, 23.0, 12.5, 9.4, 6.8, 5.4, 3.8, 2.6Hz) 를 본 대략값. 스윕 시작 시각·속도·선형/로그 여부는 모름",
+  "as_dev": {
+    "file": "hbta_as_dev.csv",
+    "signal": "AS (가진기 가속도계 PCB 356A16), 가진 방향 1축, 원본 (열화 없음)",
+    "window": "1.2-dev 결과와 같은 10.24초 Window (experiment_id, window_start_us, window_start_s 로 연결)",
+    "rms": "Window 평균을 뺀 표준편차 (대역 필터 없음)",
+    "dom_freq": "Welch (hann, nperseg 512 = 5.12초, 50% 겹침 → 해상도 0.195Hz), 1–50Hz 안 최대 피크, 포물선 보간. 한 Window 안에서도 스윕 주파수가 바뀌므로 Window 안의 대표값",
+    "scope": "개발용 6개만. 확인용 측정의 AS 는 사전 등록서 Push 뒤에 처리"
+  },
+  "sweep_source": "'2→46→2Hz' 는 문서가 아니라 위 MVS_P2_UDS_SM_Z_01 탐색에서 측정 전체(623.35초)를 20등분한 약 31.2초 구간별 우세 진동수 (구간마다 Welch nperseg 1024, AG05 z) (6.8, 2.2, 3.0, 4.6, 6.6, 7.4, 12.1, 15.2, 24.3, 39.5, 46.2, 39.4, 25.7, 23.0, 12.5, 9.4, 6.8, 5.4, 3.8, 2.6Hz) 를 본 대략값. 스윕 시작 시각·속도·선형/로그 여부는 모름",
   "base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"
 }

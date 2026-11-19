@@ -25,6 +25,7 @@ import json
 import re
 from datetime import date, datetime
 
+import numpy as np
 import pandas as pd
 
 from ai2_message import anomaly_probability, build_messages, clean, fit_confidence, save_jsonl
@@ -736,6 +737,40 @@ PUBLIC_STAGES = {
 }
 
 
+AS_WELCH = {"nperseg": 512, "noverlap": 256, "window": "hann", "f_min_hz": 1.0, "f_max_hz": 50.0}
+
+
+def hbta_as_dev(frames):
+    """개발용 SM 6개의 가진기 가속도계(AS) Window 별 우세 진동수·RMS. 원본(열화 없음), 1.2-dev 와 같은 10.24초 Window.
+    AS 는 가진 방향 1축 (Y 가진 → y, Z 가진 → z). 평균만 빼고 대역 필터는 쓰지 않음 (스윕이 2–25Hz 밖까지 가므로)"""
+    import h5py
+    from scipy import signal
+    from config import HBTA, ORIGINAL_DIR
+    win = frames["hbta_raw"][["experiment_id", "source_record", "window_start_us", "window_start_s"]]
+    fs, n_win = HBTA["sample_rate_hz"], int(round(HBTA["window_s"] * HBTA["sample_rate_hz"]))
+    rows = []
+    with h5py.File(ORIGINAL_DIR / HBTA["file"], "r") as f:
+        for rec, g in win.groupby("source_record"):
+            axis = rec.split("_")[4].lower()
+            x = f[rec]["acceleration"]["AS"][axis][()].astype(float)
+            for r in g.itertuples():
+                i0 = int(round(r.window_start_s * fs))
+                seg = x[i0:i0 + n_win]
+                seg = seg - seg.mean()
+                fr, pw = signal.welch(seg, fs, window=AS_WELCH["window"], nperseg=AS_WELCH["nperseg"], noverlap=AS_WELCH["noverlap"])
+                m = (fr >= AS_WELCH["f_min_hz"]) & (fr <= AS_WELCH["f_max_hz"])
+                k = int(np.argmax(np.where(m, pw, -np.inf)))
+                peak = fr[k]
+                if 0 < k < len(pw) - 1 and m[k - 1] and m[k + 1]:
+                    y0, y1, y2 = pw[k - 1], pw[k], pw[k + 1]
+                    den = y0 - 2 * y1 + y2
+                    peak = fr[k] + (0.5 * (y0 - y2) / den * (fr[1] - fr[0]) if den != 0 else 0.0)
+                rows.append({"experiment_id": r.experiment_id, "source_record": rec, "window_start_us": r.window_start_us,
+                             "window_start_s": r.window_start_s, "as_axis": axis.upper(),
+                             "as_dom_freq_hz": round(float(peak), 3), "as_rms_m_s2": round(float(seg.std()), 6)})
+    return pd.DataFrame(rows)
+
+
 def dev_provenance(frames):
     """AI1-public-1.2-dev 기록: 개발용 SM 정상 6개 (INFRIUM/AI-2#15, AI② 2026-11-19 요청)"""
     from config import HBTA, LIS2DW12
@@ -755,11 +790,17 @@ def dev_provenance(frames):
         "windows_by_record": {r: int(n) for r, n in f.groupby("source_record").size().items()},
         "hold_deg_windows": int(frames["hbta_deg"]["prediction"].eq("판정 보류").sum()),
         "previously_viewed_sm_records": {
-            "MVS_P2_UDS_SM_Z_01": "2026-11-04 초기 탐색에서 AG05 z 의 47초 구간 20개 RMS·우세 진동수, AG03 z·AG05 z·AG05 y 전체 RMS·P2P·피크 진동수를 봄 (확인용으로 남길 측정)",
+            "MVS_P2_UDS_SM_Z_01": "2026-11-04 초기 탐색에서 AG05 z 를 측정 전체 20등분(약 31.2초 구간 20개)한 RMS·우세 진동수, AG03 z·AG05 z·AG05 y 전체 RMS·P2P·피크 진동수를 봄 (확인용으로 남길 측정)",
             "MVS_P1_UDS_SM_Y_01": "2026-11-04 초기 탐색에서 AG03 z·AG05 z·AG05 y 전체 RMS·P2P·피크 진동수를 봄 (개발용)",
             "damage_sm_records": "손상 SM 측정은 값을 본 적 없음",
         },
-        "sweep_source": "'2→46→2Hz' 는 문서가 아니라 위 MVS_P2_UDS_SM_Z_01 탐색에서 47초 구간별 우세 진동수 (6.8, 2.2, 3.0, 4.6, 6.6, 7.4, 12.1, 15.2, 24.3, 39.5, 46.2, 39.4, 25.7, 23.0, 12.5, 9.4, 6.8, 5.4, 3.8, 2.6Hz) 를 본 대략값. 스윕 시작 시각·속도·선형/로그 여부는 모름",
+        "as_dev": {"file": "hbta_as_dev.csv", "signal": "AS (가진기 가속도계 PCB 356A16), 가진 방향 1축, 원본 (열화 없음)",
+                   "window": "1.2-dev 결과와 같은 10.24초 Window (experiment_id, window_start_us, window_start_s 로 연결)",
+                   "rms": "Window 평균을 뺀 표준편차 (대역 필터 없음)",
+                   "dom_freq": f"Welch ({AS_WELCH['window']}, nperseg {AS_WELCH['nperseg']} = 5.12초, 50% 겹침 → 해상도 0.195Hz), "
+                               f"{AS_WELCH['f_min_hz']:g}–{AS_WELCH['f_max_hz']:g}Hz 안 최대 피크, 포물선 보간. 한 Window 안에서도 스윕 주파수가 바뀌므로 Window 안의 대표값",
+                   "scope": "개발용 6개만. 확인용 측정의 AS 는 사전 등록서 Push 뒤에 처리"},
+        "sweep_source": "'2→46→2Hz' 는 문서가 아니라 위 MVS_P2_UDS_SM_Z_01 탐색에서 측정 전체(623.35초)를 20등분한 약 31.2초 구간별 우세 진동수 (구간마다 Welch nperseg 1024, AG05 z) (6.8, 2.2, 3.0, 4.6, 6.6, 7.4, 12.1, 15.2, 24.3, 39.5, 46.2, 39.4, 25.7, 23.0, 12.5, 9.4, 6.8, 5.4, 3.8, 2.6Hz) 를 본 대략값. 스윕 시작 시각·속도·선형/로그 여부는 모름",
     }
 
 
@@ -780,6 +821,9 @@ def export_public(stage="1.1"):
     public_column_guide(frames).to_csv(out_dir / "column_guide.csv", index=False, encoding="utf-8-sig")
     info = public_sensor_info()
     info[info["dataset"].isin(names)].to_csv(out_dir / "sensor_info.csv", index=False, encoding="utf-8-sig")
+    if stage == "1.2-dev":
+        frames["hbta_raw"]["window_start_s"]  # 1.2 부터 있는 열
+        hbta_as_dev(frames).to_csv(out_dir / "hbta_as_dev.csv", index=False, encoding="utf-8-sig")
     prov = public_provenance(frames) if stage == "1.1" else {**dev_provenance(frames), "base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"}
     (out_dir / "data_provenance.json").write_text(json.dumps(prov, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"공개 데이터 전달 파일 ({version}) → {out_dir}")
