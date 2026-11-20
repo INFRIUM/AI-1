@@ -510,8 +510,8 @@ def public_results(name, source, exps, version=MODEL_VERSION):
         pred = pred.merge(r2.rename(columns={c: f"v2_{c}" for c in V2_RESULT_COLS}), on=["experiment_id", "window_start_us"], how="left")
     keep = ["experiment_id", *[c for c in LABEL_COLS if c in exps.columns]]
     out = pred.drop(columns=[c for c in ("condition", "temperature_c", "load_level_kg", "load_position") if c in pred])
+    out = out[out["experiment_id"].isin(exps["experiment_id"])]   # 이번 전달 대상 실험만 (merge 전에 걸러 정수 열 유지)
     out = out.merge(exps[keep], on="experiment_id", how="left")
-    out = out[out["experiment_id"].isin(exps["experiment_id"])].copy()   # 이번 전달 대상 실험만
     t = pd.to_numeric(out.get("temperature_c"), errors="coerce") if "temperature_c" in out else None
     if t is not None and t.notna().any() and (t.dropna() % 1 == 0).all():   # 측정 단위 정수 온도는 정수로 표기
         out["temperature_c"] = t.astype("Int64")
@@ -732,9 +732,10 @@ def v2_provenance():
 
 PUBLIC_STAGES = {
     # 전달 단계: (데이터셋, 출력 폴더, 버전, 실험 선택)
-    "1.1": (PUBLIC_DATASETS, PUBLIC_OUT, MODEL_VERSION, lambda e: ~e["label_status"].isin(["개발용", "확인용"])),
+    "1.1": (PUBLIC_DATASETS, PUBLIC_OUT, MODEL_VERSION, lambda e: ~e["label_status"].isin(["개발용", "확인용", "DS2 이전"])),
     "1.2-dev": (("hbta",), PUBLIC_OUT.with_name("for_AI2_1.2-dev"), "AI1-public-1.2-dev", lambda e: e["label_status"] == "개발용"),
     "1.2": (("hbta",), PUBLIC_OUT.with_name("for_AI2_1.2"), "AI1-public-1.2", lambda e: e["label_status"] == "확인용"),
+    "1.3": (("ponte_moesa",), PUBLIC_OUT.with_name("for_AI2_1.3"), "AI1-public-1.3", lambda e: e["label_status"] == "DS2 이전"),
 }
 
 
@@ -842,6 +843,30 @@ def check_provenance(frames):
     }
 
 
+def moesa_pre_provenance(frames):
+    """AI1-public-1.3 기록: Ponte Moesa DS2 이전 측정 AMB_1–6 (AI② 2026-11-20 요청, INFRIUM/AI-2#15)"""
+    from config import LIS2DW12, MOESA
+    f = frames["ponte_moesa_raw"]
+    return {
+        "generated_at": datetime.now().isoformat(timespec="seconds"), "model_version": "AI1-public-1.3",
+        "purpose": "Ponte Moesa DS2 이전 상태 (DS0·DS1) 확인용 결과. 손상 없는 측정은 데이터셋에 없음 (DS0부터 철근 I·II 노출)",
+        "records": [{"source_record": a, "start": f"2019-11-{s}", "end": f"2019-11-{e}", "official_list_state": st,
+                     "figure6_state": fs_, "setup": su} for a, s, e, st, su, fs_ in MOESA["pre"]],
+        "labels": {"damage_stage": "공식 목록 Ambient.txt 의 상태",
+                   "subset": "논문 그림 6 시각으로 본 상태 ('그림6 DS0' 등). AMB_2–6 은 목록과 그림이 한 단계 다름",
+                   "ai1_split": "pre (학습·검증·판정 기준에 쓰지 않음)", "label_status": "DS2 이전"},
+        "sensors": "고정 센서 2번(MOESA_ACC_02, L/2)·3번(MOESA_ACC_03) 만. 이동 센서 4번은 setup 1·2 에서 S5 위치(3/4L)가 아니라 넣지 않음 → acc01 열은 비어 있음",
+        "ai1_model": "v1 그대로 (AI1-public-1.1 의 Ponte Moesa 모델, 다시 학습하지 않음). acc01(주 센서)이 없어 v1 판정은 '판정 불가'가 정상",
+        "windows": "1.1 과 같음 (60초 Window, 30초 이동). 측정 전체를 블록 하나로",
+        "features": "1.1 과 같음 (2–25Hz, AR(5), 판정 보류 기준 같음). 1-TAC 기준은 1.1 의 AI① train(DS2, S5) 그대로",
+        "degradation_seed": f"v1 규칙 그대로. default_rng([{LIS2DW12['seed']}, 2, 측정 번호, 채널 번호]). 측정 번호는 기존 Moesa 측정 뒤 번호 (기존 측정 번호 그대로)",
+        "ids": "record_id MOESA_P_01–06 (시드 고정 순열), experiment_id 는 기존 MOESA 번호 뒤",
+        "windows_by_record": {r: int(n) for r, n in f.groupby("source_record").size().items()},
+        "hold_deg_windows": int(frames["ponte_moesa_deg"]["prediction"].eq("판정 보류").sum()),
+        "unchanged_outputs": "AI1-public-1.1 Ponte Moesa 결과는 이번 처리 뒤에도 값 그대로",
+    }
+
+
 def export_public(stage="1.1"):
     names, out_dir, version, select = PUBLIC_STAGES[stage]
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -865,7 +890,8 @@ def export_public(stage="1.1"):
         hbta_as_dev(frames).to_csv(out_dir / as_name, index=False, encoding="utf-8-sig")
     base = {"base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"}
     prov = (public_provenance(frames) if stage == "1.1" else
-            {**dev_provenance(frames), **base} if stage == "1.2-dev" else {**check_provenance(frames), **base})
+            {**dev_provenance(frames), **base} if stage == "1.2-dev" else
+            {**moesa_pre_provenance(frames), **base} if stage == "1.3" else {**check_provenance(frames), **base})
     (out_dir / "data_provenance.json").write_text(json.dumps(prov, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"공개 데이터 전달 파일 ({version}) → {out_dir}")
     for f in sorted(out_dir.iterdir()):
@@ -885,5 +911,7 @@ if __name__ == "__main__":
         export_public("1.2-dev")
     elif sys.argv[1:] == ["public-check"]:
         export_public("1.2")
+    elif sys.argv[1:] == ["public-moesa-pre"]:
+        export_public("1.3")
     else:
         main()

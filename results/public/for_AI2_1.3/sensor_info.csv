@@ -1,0 +1,4 @@
+﻿dataset,sensor_id,결과파일_약칭,sensor_type,device,source_sensor,sensor_location,x_m,x_ratio,y_m,sample_rate_hz,unit,axes,HW 대응
+ponte_moesa,MOESA_ACC_01,acc01,acceleration,Syscom MR3000C / LIS2DW12 (열화본),"4 (이동, S5)",2경간 3/4L (L/4 대칭 위치),53.75,0.75,3.0,200,m/s^2,"X,Y,Z",HW L/4 가속도계에 대응
+ponte_moesa,MOESA_ACC_02,acc02,acceleration,Syscom MR3000C / LIS2DW12 (열화본),2 (고정),2경간 L/2,45.5,0.5,-3.0,200,m/s^2,"X,Y,Z",HW L/2 가속도계에 대응
+ponte_moesa,MOESA_ACC_03,acc03,acceleration,Syscom MR3000C / LIS2DW12 (열화본),3 (고정),3경간 약 0.57L (세션 차이용),78.5,0.57,3.0,200,m/s^2,"X,Y,Z",세션 차이 확인용 (HW 에 없음)

@@ -286,6 +286,38 @@ def moesa_time_us(text):
     return int(datetime(2019, 11, int(day), h, m, s, tzinfo=timezone.utc).timestamp() * 1e6)
 
 
+def moesa_pre_records(n_records, n_experiments):
+    """DS2 이전 측정 (AMB_1–6, setup 1·2). 고정 센서 2·3번만 (이동 센서 4번은 S5 위치가 아님).
+    측정 전체를 블록 하나로. 기존 측정 번호·ID·experiment_id 는 그대로 두고 뒤에 붙인다."""
+    fs, step = MOESA["sample_rate_hz"], MOESA["window_s"] * (1 - MOESA["overlap"])
+    pre = MOESA["pre"]
+    ids = neutral_ids("MOESA_P", len(pre), salt=202)
+    records, rows = [], []
+    for day in sorted({int(p[1][:2]) for p in pre}):
+        f, t_us, ch = moesa_day(day)
+        for k, (amb, start, end, stage, setup, fig_stage) in enumerate(pre):
+            if int(start[:2]) != day:
+                continue
+            s_us, e_us = moesa_time_us(start), moesa_time_us(end)
+            i0, i1 = np.searchsorted(t_us, [s_us, e_us])
+            signals = {(sid, axis): ch[f"{axis}{num}"][0, i0:i1].astype(float)
+                       for sid, num in MOESA["sensors"].items() if num != 4 for axis in "XYZ"}
+            records.append((ids[k], signals, t_us[i0:i1], fs, n_records + k + 1))
+            n_win = int(((e_us - s_us) / 1e6 - MOESA["window_s"]) // step + 1)
+            rows.append({
+                "experiment_id": f"MOESA_{n_experiments + k + 1:04d}",
+                "record_id": ids[k], "source_record": amb, "file": f"{ids[k]}.parquet",
+                "start_us": s_us, "end_us": e_us, "n_windows": max(n_win, 0),
+                "split": "pre", "cv_group": "", "subset": f"그림6 {fig_stage}", "bridge_type": "BOX",
+                "damage_type": "DMG", "severity_level": "", "damage_stage": stage, "label_status": "DS2 이전",
+                "condition": f"AMB_S{setup}", "setup": setup, "load_position": "",
+                "temperature_c": "", "train_passing": "", "wind_range": "", "date": f"2019-11-{day}",
+            })
+        f.close()
+    rows.sort(key=lambda r: r["experiment_id"])
+    return records, rows
+
+
 def convert_moesa():
     fs = MOESA["sample_rate_hz"]
     blocks = pd.DataFrame(MOESA["blocks"], columns=["amb", "start", "end", "damage_stage", "split", "group", "label_status"])
@@ -326,6 +358,9 @@ def convert_moesa():
         })
     exps = pd.DataFrame(rows).sort_values(["record_id", "start_us"], ignore_index=True)
     exps.insert(0, "experiment_id", [f"MOESA_{i:04d}" for i in range(1, len(exps) + 1)])
+    pre_records, pre_rows = moesa_pre_records(len(records), len(exps))   # 기존 번호 뒤에 붙임
+    records += pre_records
+    exps = pd.concat([exps, pd.DataFrame(pre_rows)], ignore_index=True)
     sensors = pd.DataFrame([
         {"sensor_id": "MOESA_ACC_01", "sensor_type": "acceleration", "device": "Syscom MR3000C / LIS2DW12 (열화본)",
          "source_sensor": "4 (이동, S5)", "sensor_location": "2경간 3/4L (L/4 대칭 위치)", "x_m": 53.75, "x_ratio": 0.75, "y_m": 3.0},
