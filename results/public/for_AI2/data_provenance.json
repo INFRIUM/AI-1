@@ -1,0 +1,709 @@
+{
+  "generated_at": "2026-11-19T09:19:45",
+  "model_version": "AI1-public-1.1",
+  "agreement": "AI①·AI② 공개 데이터 인터페이스 합의서 v3 (2026-11-12 확정, INFRIUM/AI-1#3)",
+  "datasets": {
+    "ponte_moesa": {
+      "doi": "10.3929/ethz-b-000716850",
+      "license": "CC BY-NC 4.0 (받은 Lisence.txt 는 MIT, 더 엄격한 쪽 적용)",
+      "paper": "Garcia-Ramonda et al. (2025) postprint",
+      "unit": "m/s^2 (센서 ±4g, 4 초과 값이 많아 확정)",
+      "label_source": "공식 목록 Ambient.txt + 논문 표 1. 라벨 규칙 ① 목록·그림 6 일치만 사용 ② 불일치 제외 (AMB_2~6, AMB_19~24, AMB_32~33, AMB_46) ③ AMB_36 은 15:20~15:22 만 주 평가, 전체는 참고",
+      "excluded": "DS4 (문헌 불일치), FVA, 센서 6번, AMB_48 (트럭 충격)",
+      "sensors": "acc01 = 4번 (S5, x=53.75m), acc02 = 2번 (x=45.5m), acc03 = 3번 (x=78.5m, 세션 차이용)",
+      "time": "원본 파일 시각 그대로 (현지 시각, 시간대 표기 없음)",
+      "limits": [
+        "DS2 기준 상태는 단일 세션 (11/27 오후, 굴착기 작업 중)",
+        "열화본에서 조용한 구간은 대부분 판정 보류",
+        "저진폭 기준 0.0785 m/s^2 는 거의 걸러지지 않음",
+        "세션 차이는 원본으로만 확인 (열화본 미검증)",
+        "DS7 묶음 A/B 는 같은 측정 (독립 검증 아님)",
+        "DS5 는 보류 후 30개 미만 → 경고 등급 잠정"
+      ],
+      "work_effect_check": {
+        "rule": "원본 T1 = AI② 보정 블록, 4번·2번 z 원본 보류 후 n. 오경보 > 0.05 × n 이면 한계 기록, n < 10 이면 참고",
+        "exception": "'원본은 열화본과 같은 Window 만' 규칙의 예외 (진동원 확인 목적)",
+        "pre_work_windows_total": 40,
+        "pre_work_windows_after_raw_hold": 22
+      }
+    },
+    "hbta": {
+      "doi": "10.5281/zenodo.14632942",
+      "license": "CC BY 4.0",
+      "paper": "Svendsen et al. (2022)",
+      "records": [
+        "MVS_P2_UDS_NM_Z_01",
+        "MVS_P2_UDS_NM_Z_02",
+        "MVS_P2_DS1_NM_Z_01",
+        "MVS_P2_DS2_NM_Z_01",
+        "MVS_P2_DS3_NM_Z_01",
+        "MVS_P2_DS4_NM_Z_01",
+        "MVS_P2_DS5_NM_Z_01",
+        "MVS_P2_DS6_NM_Z_01",
+        "MVS_P2_DS7_NM_Z_01",
+        "MVS_P2_DS8_NM_Z_01"
+      ],
+      "sensors": "acc01 = AG03 (x=-7m), acc02 = AG05 (x=0)",
+      "unit": "m/s^2",
+      "time": "측정 날짜 00:00 UTC + 경과 시간 (실제 측정 시각 아님)",
+      "notes": [
+        "손상은 측정마다 보수 (누적 아님)",
+        "UDS_02 블록 전체 train_passing (열차 구간 검출 방법 없음)",
+        "온도 보정 끔",
+        "열화본 판정은 z 축만 (y 축은 보류되어 원인 분석용)",
+        "1-TAC 는 기본 Window 3개 (30.72초) 묶음",
+        "논문의 10.24초 × 80 시험은 측정 1개를 자른 것으로 추정 (독립 시험 아님)"
+      ]
+    },
+    "old_ada": {
+      "doi": "10.17632/sc8whx4pvm.2",
+      "license": "CC BY 4.0",
+      "papers": [
+        "Kim et al. (2021) J. Bridge Eng. (본문 미확인)",
+        "Quqa & Landi (2023) MSSP 186, 109907 (센서 정보)"
+      ],
+      "sensors": "acc01 = A1 (진동 2열, L/4), acc02 = A3 (진동 4열, L/2). 열 대응은 AI① 이 모드 형상으로 확인 (추정)",
+      "unit": {
+        "value": "m/s^2 (간접 근거 2가지로 추정, 문서 확정 아님)",
+        "evidence": [
+          "잡음 바닥: 70–95Hz 약 6×10⁻⁵/√Hz. m/s^2 면 약 6 µg/√Hz, gal 이면 약 0.06 µg/√Hz 로 일반 계측용 가속도계로는 매우 어려움",
+          "상시 진동 수준: 2–25Hz RMS 0.001–0.022. m/s^2 면 0.1–2.2 mg 로 교량 상시 진동 범위"
+        ],
+        "not_usable": [
+          "설명 페이지에 단위 표기 없음",
+          "원시 데이터 평균 0 (영점 제거) → 중력 성분 확인 불가"
+        ],
+        "limit": "단위가 gal 이면 열화본 Window 는 전부 판정 보류에 해당함"
+      },
+      "time": "측정 시각 정보 없음 → 주행마다 1시간 간격 가상 시각",
+      "notes": [
+        "Window = 진출 광센서 +1~31초 자유 감쇠, 주행당 1개",
+        "AI① 은 Isolation Forest 없이 z-score 만 (정상 학습 주행 4개)",
+        "통과 판정 없이 서술 보고",
+        "DMG1 12회 사용 (논문은 10회, 차이 이유 불명)",
+        "사전 기록: DMG1 은 2~25Hz 동적 Feature 로 탐지되지 않을 수 있음 (Quqa & Landi 2023)",
+        "OLDADA_0059 (INT 50km/h #5, 49.2km/h) 판정 불가: acc01 감쇠비 계산 실패로 모델 입력이 빠짐. Window 시작 직후 짧은 고주파 충격이 있어 acc01 포락선이 0.2초 만에 최댓값의 20% 아래로 떨어짐 (감쇠비 계산에는 최소 3주기, 약 1초 필요). 2–25Hz RMS 는 다른 주행보다 작음 (acc01 0.090 / acc02 0.095 m/s^2, 다른 주행 중앙값 0.215 / 0.221), 8–15Hz·15–25Hz 에너지 비는 다른 주행의 31–41배. 충격의 원인 기록 없음",
+        "30·50km/h INT 주행은 '속도 영향 확인용 (참고)'. 40km/h test 3회를 주로 서술하고 따로 보고",
+        "AI① v1 |z| 중앙값: 40km/h test 2.8, 30km/h 5.1, 50km/h 약 100. 정상 기준 표본이 train 4회뿐이라 표준편차가 작아 |z| 가 과장될 수 있음"
+      ],
+      "limits": [
+        "진폭 Feature 는 가진 조건(차량 속도)에 민감함: 손상이 없어도 속도가 바뀌면 크게 벗어남"
+      ]
+    }
+  },
+  "original_file_md5": {
+    "ponte_moesa": {
+      "moesa/Acceleration_Data.zip": "bf20d0678fede40a4b239579e996c595",
+      "moesa/Data Nov 26_27.zip": "c350cb8865bd231fd88199044f64f62c",
+      "moesa/Data Nov 28_29.zip": "b454ce0c6237bf77589bad10e8093791"
+    },
+    "hbta": {
+      "hbta/data_100Hz.h5": "43406591cd7f8b8bd1b0b868d3312e38"
+    },
+    "old_ada": {
+      "old_ada/Old_ADA_Bridge-damage_vibration_data.zip": "7739f5a5b8d7be25ce6f7d74e19d3c66"
+    }
+  },
+  "degradation": {
+    "seed_rule": "채널 난수 = numpy default_rng([20261109, 데이터셋 번호 (HBTA 1, Ponte Moesa 2, Old ADA 3), 측정 번호, 채널 번호]). HBTA 측정 번호: AI1-public-1.1 의 10개는 config 순서대로 1–10, 확인용 새 측정은 사전 등록서 목록 순서대로 11부터. 채널 번호: 센서·축 순서 (acc01 Y = 1, acc01 Z = 2, acc02 Y = 3, acc02 Z = 4). 기존 측정의 열화 결과는 바뀌지 않음",
+    "sensor": "LIS2DW12 (±2g, 14bit, 고성능 + 저잡음, 90 µg/√Hz)",
+    "order": "잡음 → 양자화 → 범위 제한(SAT) → 2~25Hz 필터 → Feature",
+    "z_axis_gravity": "수직축은 1g 를 더한 상태로 양자화·범위 제한 후 다시 뺌",
+    "seed": 20261109,
+    "noise_band_rms_mg": {
+      "200Hz": 0.411,
+      "100Hz": 0.416
+    },
+    "hold_threshold_m_s2": {
+      "deg_200Hz": 0.0057,
+      "deg_100Hz": 0.0058,
+      "raw_moesa_MR3000C": 0.00063
+    },
+    "hold_threshold_exact_m_s2": {
+      "deg_200Hz": 0.0057041894,
+      "deg_100Hz": 0.0057711219,
+      "raw_moesa_MR3000C": 0.0006318644,
+      "rule": "2–25Hz RMS < 기준 이면 보류. 기준 = 잡음 RMS × √2, 잡음 RMS = 잡음 밀도 × √(필터 등가 대역폭) (LIS2DW12 는 14bit 양자화 잡음 포함)"
+    }
+  },
+  "preprocess": {
+    "filter": "4차 Butterworth 대역 통과 2~25Hz, 양방향, 실험 앞뒤 10초 여유",
+    "windows": {
+      "ponte_moesa": "60초 / 30초 이동",
+      "hbta": "10.24초, 겹침 없음",
+      "old_ada": "30초 (자유 감쇠)"
+    },
+    "tac": "Welch (Hann, 50% 겹침), T = G_ba / G_bb, 기준 = AI① train Window 평균 스펙트럼의 비",
+    "ar": "AR(5), 채널별, 평균 제거, 절편 없음, numpy 최소제곱",
+    "channel_hold": "주 지표 채널 보류 → Window 판정 보류, 보조 채널 → 그 채널 Feature 빈 값 (열화본)"
+  },
+  "windows_by_split": {
+    "ponte_moesa_raw": [
+      {
+        "ai1_split": "ai2_calib",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 99,
+        "judged": 99
+      },
+      {
+        "ai1_split": "session",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 96,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 119,
+        "judged": 119
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS3",
+        "label_status": "확실",
+        "windows": 135,
+        "judged": 135
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS5",
+        "label_status": "참고",
+        "windows": 135,
+        "judged": 135
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS5",
+        "label_status": "확실",
+        "windows": 12,
+        "judged": 12
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS6",
+        "label_status": "참고",
+        "windows": 14,
+        "judged": 14
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS7",
+        "label_status": "확실",
+        "windows": 36,
+        "judged": 36
+      },
+      {
+        "ai1_split": "train",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 229,
+        "judged": 229
+      },
+      {
+        "ai1_split": "val",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 99,
+        "judged": 99
+      }
+    ],
+    "ponte_moesa_deg": [
+      {
+        "ai1_split": "ai2_calib",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 99,
+        "judged": 72
+      },
+      {
+        "ai1_split": "session",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 96,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 119,
+        "judged": 29
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS3",
+        "label_status": "확실",
+        "windows": 135,
+        "judged": 90
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS5",
+        "label_status": "참고",
+        "windows": 135,
+        "judged": 104
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS5",
+        "label_status": "확실",
+        "windows": 12,
+        "judged": 12
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS6",
+        "label_status": "참고",
+        "windows": 14,
+        "judged": 9
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS7",
+        "label_status": "확실",
+        "windows": 36,
+        "judged": 32
+      },
+      {
+        "ai1_split": "train",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 229,
+        "judged": 162
+      },
+      {
+        "ai1_split": "val",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 99,
+        "judged": 66
+      }
+    ],
+    "hbta_raw": [
+      {
+        "ai1_split": "ai2_calib",
+        "damage_stage": "UDS",
+        "label_status": "확실",
+        "windows": 32,
+        "judged": 32
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS1",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS3",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS4",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS5",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS6",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS7",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS8",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "UDS",
+        "label_status": "확실",
+        "windows": 34,
+        "judged": 34
+      },
+      {
+        "ai1_split": "train",
+        "damage_stage": "UDS",
+        "label_status": "확실",
+        "windows": 66,
+        "judged": 66
+      },
+      {
+        "ai1_split": "val",
+        "damage_stage": "UDS",
+        "label_status": "확실",
+        "windows": 32,
+        "judged": 32
+      }
+    ],
+    "hbta_deg": [
+      {
+        "ai1_split": "ai2_calib",
+        "damage_stage": "UDS",
+        "label_status": "확실",
+        "windows": 32,
+        "judged": 32
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS1",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS2",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS3",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS4",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS5",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS6",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS7",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DS8",
+        "label_status": "확실",
+        "windows": 82,
+        "judged": 82
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "UDS",
+        "label_status": "확실",
+        "windows": 34,
+        "judged": 34
+      },
+      {
+        "ai1_split": "train",
+        "damage_stage": "UDS",
+        "label_status": "확실",
+        "windows": 66,
+        "judged": 66
+      },
+      {
+        "ai1_split": "val",
+        "damage_stage": "UDS",
+        "label_status": "확실",
+        "windows": 32,
+        "judged": 32
+      }
+    ],
+    "old_ada_raw": [
+      {
+        "ai1_split": "ai2_calib",
+        "damage_stage": "INT",
+        "label_status": "확실",
+        "windows": 3,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DMG1",
+        "label_status": "확실",
+        "windows": 12,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DMG2",
+        "label_status": "확실",
+        "windows": 10,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DMG3",
+        "label_status": "확실",
+        "windows": 10,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "INT",
+        "label_status": "속도 영향 확인용 (참고)",
+        "windows": 16,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "INT",
+        "label_status": "확실",
+        "windows": 3,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "RCV",
+        "label_status": "참고 (회복 불완전)",
+        "windows": 10,
+        "judged": 0
+      },
+      {
+        "ai1_split": "train",
+        "damage_stage": "INT",
+        "label_status": "확실",
+        "windows": 4,
+        "judged": 0
+      }
+    ],
+    "old_ada_deg": [
+      {
+        "ai1_split": "ai2_calib",
+        "damage_stage": "INT",
+        "label_status": "확실",
+        "windows": 3,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DMG1",
+        "label_status": "확실",
+        "windows": 12,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DMG2",
+        "label_status": "확실",
+        "windows": 10,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "DMG3",
+        "label_status": "확실",
+        "windows": 10,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "INT",
+        "label_status": "속도 영향 확인용 (참고)",
+        "windows": 16,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "INT",
+        "label_status": "확실",
+        "windows": 3,
+        "judged": 0
+      },
+      {
+        "ai1_split": "test",
+        "damage_stage": "RCV",
+        "label_status": "참고 (회복 불완전)",
+        "windows": 10,
+        "judged": 0
+      },
+      {
+        "ai1_split": "train",
+        "damage_stage": "INT",
+        "label_status": "확실",
+        "windows": 4,
+        "judged": 0
+      }
+    ]
+  },
+  "ai1_v2": {
+    "status": "결과 열람 후 변경한 방법. 참고 결과로만 사용, 한 번만 실행 (AI② 확인 2026-11-18)",
+    "rule": {
+      "stability": "|중앙값1 − 중앙값2| ÷ √(s1² + s2²) < 1.0, s = MAD × 1.4826, 열화본 정상 Window (판정 보류 제외)",
+      "noise": "열화본 정상 s ÷ 원본 정상 s < 2.0 (같은 Window)",
+      "no_pass": "통과 Feature 없으면 v2 미실행, v1 만 보고",
+      "modes": "원본 AI① train 평균 스펙트럼(두 센서 z 합)에서 2–25Hz 돌출도 상위 3개, 대역 ±15% 겹치면 큰 쪽. 열화본도 같은 대역"
+    },
+    "limits": [
+      "Ponte Moesa: 안정성은 같은 측정(AMB_18) train vs val → 세션 간 안정성 검증되지 않음",
+      "Old ADA: 안정성 미적용 (정상 4회), 잡음 견딤도 4개 Window 로 계산",
+      "모드 진동수는 손상에 둔감할 수 있음 (Garcia-Ramonda et al. 2025), 단독 사용 안 함",
+      "Ponte Moesa: 열화본 DS3 비율 상승은 AMB_28의 약 15Hz 피크(v2_f3)와 원본·열화본 판정 기준 차이(z 기준 6.44 / 4.84)에서 나옴. 15Hz 피크는 DS5·DS7에서 보이지 않아 측정 시점의 진동원일 가능성(원인 기록 없음). 탐지 개선 근거로 쓰지 않음 (AI② 확인 INFRIUM/AI-1#4, AI① 재확인: AMB_28 v2_f3 중앙값 15.02Hz, 14.5Hz 초과 87–88%, 다른 측정 13.2–13.6Hz, 열화본 DS3 Anomaly 72개 중 52개의 top1 이 v2_f3)",
+      "Ponte Moesa 원인 확인 (같은 Window 기준): 분모 차이 아님 (판정 보류 안 된 같은 Window 에서도 원본 4%, 열화본 80%). DS3 은 조용한 측정 아님 (원본 2–25Hz RMS 중앙값 acc01 0.0076 / acc02 0.0141 m/s^2, AI① train·val 0.0086 / 0.0106). 원본→열화본 변화가 가장 큰 Feature 는 v2_shape1 (정상 s 의 1.3–2.1배), v2_shape3, v2_e1_acc01 (0.6–1.0배). v2_shape1 값 이동은 DS3 상승의 원인은 아니지만, 값의 퍼짐만 보는 잡음 견딤 규칙의 한계로 기록",
+      "Old ADA: 속도 영향이 손상 영향보다 큼 (정상 50km/h |z| 58.4 > DMG1 25.1, DMG2 24.2). 정상 40km/h AI② 기준 3회도 6.5 로 정상 주행 사이 변동이 큼 (정상 기준 4회, Feature 13개 중 최댓값). |z| 는 순서로만 해석",
+      "Old ADA DMG1: 사전 기록('탐지되지 않을 수 있음')과 달리 v2 |z| 25.1. 위 두 이유로 'v2 가 DMG1 을 탐지함'의 근거로 쓰지 않음. RCV (17.0) 도 해석하지 않음"
+    ],
+    "hw_rule_lessons": [
+      "잡음 견딤은 진동이 작은 측정까지 포함해 확인 (Ponte Moesa)",
+      "가진 조건(타격 세기·위치)이 바뀌어도 정상 판정이 유지되는지 따로 확인 (Old ADA)"
+    ],
+    "datasets": {
+      "ponte_moesa": {
+        "modes_hz": [
+          7.2265625,
+          9.86328125,
+          13.37890625
+        ],
+        "selected": [
+          "v2_f1",
+          "v2_shape1",
+          "v2_e1_acc01",
+          "v2_e1_acc02",
+          "v2_f2",
+          "v2_shape2",
+          "v2_e2_acc01",
+          "v2_e2_acc02",
+          "v2_f3",
+          "v2_shape3",
+          "v2_e3_acc01",
+          "v2_e3_acc02",
+          "cross_amp_ratio_L4_L2_z"
+        ],
+        "rejected": {},
+        "windows": {
+          "windows_train": 162,
+          "windows_val": 66,
+          "excluded_held_deg": 100,
+          "raw_windows_used": 228,
+          "used_splits": "train,val (ai2_calib·test 미사용)"
+        }
+      },
+      "hbta": {
+        "modes_hz": [
+          6.8359375,
+          17.28515625,
+          23.92578125
+        ],
+        "selected": [
+          "v2_f1",
+          "v2_e1_acc01",
+          "v2_e1_acc02",
+          "v2_shape2",
+          "v2_e2_acc01",
+          "v2_f3",
+          "v2_shape3",
+          "v2_e3_acc01",
+          "v2_e3_acc02",
+          "cross_amp_ratio_L4_L2_z"
+        ],
+        "rejected": {
+          "v2_shape1": {
+            "stability": 0.234,
+            "noise_ratio": 4.693
+          },
+          "v2_f2": {
+            "stability": 0.308,
+            "noise_ratio": 2.278
+          },
+          "v2_e2_acc02": {
+            "stability": 0.457,
+            "noise_ratio": 6.74
+          }
+        },
+        "windows": {
+          "windows_train": 66,
+          "windows_val": 32,
+          "excluded_held_deg": 0,
+          "raw_windows_used": 98,
+          "used_splits": "train,val (ai2_calib·test 미사용)"
+        }
+      },
+      "old_ada": {
+        "modes_hz": [
+          2.9296875,
+          6.8359375,
+          10.546875
+        ],
+        "selected": [
+          "v2_f1",
+          "v2_e1_acc01",
+          "v2_e1_acc02",
+          "v2_f2",
+          "v2_e2_acc01",
+          "v2_e2_acc02",
+          "v2_f3",
+          "v2_shape3",
+          "v2_e3_acc01",
+          "v2_e3_acc02",
+          "cross_amp_ratio_L4_L2_z",
+          "acc01_damping_z",
+          "acc02_damping_z"
+        ],
+        "rejected": {
+          "v2_shape1": {
+            "stability": null,
+            "noise_ratio": 3.932
+          },
+          "v2_shape2": {
+            "stability": null,
+            "noise_ratio": 2.146
+          }
+        },
+        "windows": {
+          "windows_train": 4,
+          "windows_val": 0,
+          "excluded_held_deg": 0,
+          "raw_windows_used": 4,
+          "used_splits": "train,val (ai2_calib·test 미사용)"
+        }
+      }
+    }
+  },
+  "information_overlap": "AI① v2 Feature (모드 형상 비, 모드별 진동수) 와 AI② 지표 (1-TAC, AR) 는 두 센서 응답 비와 스펙트럼 정보를 일부 공유함. 같은 결론을 서로 독립인 두 근거로 쓰지 않음",
+  "fva_label_mismatch": "FVA_2·3, FVA_17~22, FVB_1·2, FVB_5~8 라벨이 같은 시각 상시 진동 라벨과 다름, FVB_12 날짜 오기, FVA_36 구성 오기 (FVA 는 사용 안 함)"
+}

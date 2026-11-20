@@ -67,3 +67,14 @@ runs/
 checkpoints/
 wandb/
 mlruns/
+
+# INFRIUM AI-1: 로컬 데이터·모델 (용량이 커서 저장소에 올리지 않음)
+IOTISO/
+data/interim/
+data/processed/
+data/original/*
+!data/original/README.md
+models/
+results/real/
+results/public_raw/
+results/public_deg/

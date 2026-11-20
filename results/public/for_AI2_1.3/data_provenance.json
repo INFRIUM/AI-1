@@ -1,0 +1,78 @@
+{
+  "generated_at": "2026-11-20T13:47:22",
+  "model_version": "AI1-public-1.3",
+  "purpose": "Ponte Moesa DS2 이전 상태 (DS0·DS1) 확인용 결과. 손상 없는 측정은 데이터셋에 없음 (DS0부터 철근 I·II 노출)",
+  "records": [
+    {
+      "source_record": "AMB_1",
+      "start": "2019-11-26 10:32:29",
+      "end": "2019-11-26 10:42:40",
+      "official_list_state": "DS0",
+      "figure6_state": "DS0",
+      "setup": 1
+    },
+    {
+      "source_record": "AMB_2",
+      "start": "2019-11-26 11:54:20",
+      "end": "2019-11-26 12:13:48",
+      "official_list_state": "DS1",
+      "figure6_state": "DS0",
+      "setup": 1
+    },
+    {
+      "source_record": "AMB_3",
+      "start": "2019-11-26 12:44:08",
+      "end": "2019-11-26 13:02:20",
+      "official_list_state": "DS1",
+      "figure6_state": "DS0",
+      "setup": 2
+    },
+    {
+      "source_record": "AMB_4",
+      "start": "2019-11-26 13:30:30",
+      "end": "2019-11-26 13:44:20",
+      "official_list_state": "DS1",
+      "figure6_state": "DS0",
+      "setup": 2
+    },
+    {
+      "source_record": "AMB_5",
+      "start": "2019-11-26 15:54:45",
+      "end": "2019-11-26 16:25:00",
+      "official_list_state": "DS2",
+      "figure6_state": "DS1",
+      "setup": 2
+    },
+    {
+      "source_record": "AMB_6",
+      "start": "2019-11-26 16:32:08",
+      "end": "2019-11-26 16:40:23",
+      "official_list_state": "DS2",
+      "figure6_state": "DS1",
+      "setup": 2
+    }
+  ],
+  "labels": {
+    "damage_stage": "공식 목록 Ambient.txt 의 상태",
+    "subset": "논문 그림 6 시각으로 본 상태 ('그림6 DS0' 등). AMB_2–6 은 목록과 그림이 한 단계 다름",
+    "ai1_split": "pre (학습·검증·판정 기준에 쓰지 않음)",
+    "label_status": "DS2 이전"
+  },
+  "sensors": "고정 센서 2번(MOESA_ACC_02, L/2)·3번(MOESA_ACC_03) 만. 이동 센서 4번은 setup 1·2 에서 S5 위치(3/4L)가 아니라 넣지 않음 → acc01 열은 비어 있음",
+  "ai1_model": "v1 그대로 (AI1-public-1.1 의 Ponte Moesa 모델, 다시 학습하지 않음). acc01(주 센서)이 없어 v1 판정은 '판정 불가'가 정상",
+  "windows": "1.1 과 같음 (60초 Window, 30초 이동). 측정 전체를 블록 하나로",
+  "features": "1.1 과 같음 (2–25Hz, AR(5), 판정 보류 기준 같음). 1-TAC 기준은 1.1 의 AI① train(DS2, S5) 그대로",
+  "degradation_seed": "v1 규칙 그대로. default_rng([20261109, 2, 측정 번호, 채널 번호]). 측정 번호는 기존 Moesa 측정 뒤 번호 (기존 측정 번호 그대로)",
+  "ids": "record_id MOESA_P_01–06 (시드 고정 순열), experiment_id 는 기존 MOESA 번호 뒤",
+  "windows_by_record": {
+    "AMB_1": 19,
+    "AMB_2": 37,
+    "AMB_3": 35,
+    "AMB_4": 26,
+    "AMB_5": 59,
+    "AMB_6": 15
+  },
+  "hold_deg_windows": 191,
+  "unchanged_outputs": "AI1-public-1.1 Ponte Moesa 결과는 이번 처리 뒤에도 값 그대로",
+  "base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"
+}
