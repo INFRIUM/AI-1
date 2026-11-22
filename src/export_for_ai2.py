@@ -471,12 +471,21 @@ STAGE_TEXT = {
         "DS3": "세로보 가로재 1곳", "DS4": "세로보 가로재 여러 곳", "DS5": "수평 가새 연결부 1곳",
         "DS6": "수평 가새 연결부 1곳", "DS7": "수평 가새 연결부 여러 곳", "DS8": "가로보-주부재 연결부 1곳",
     },
+    "vanersborg": {"PRE": "파단 전", "DUR": "파단 중 (2023-03-09 23:45 이벤트)", "POST": "파단 후 (균형추 트러스 하현재 균열)"},
+    "lumo": {"UDS": "정상 (가새 모두 연결)", "DAM6_111": "DAM6 가새 3개 제거 (큰 손상)", "DAM4_111": "DAM4 가새 3개 제거 (큰 손상)",
+             "DAM3_111": "DAM3 가새 3개 제거 (큰 손상)", "DAM6_010": "DAM6 가새 1개 제거 (작은 손상)",
+             "DAM4_010": "DAM4 가새 1개 제거 (작은 손상)", "DAM3_010": "DAM3 가새 1개 제거 (작은 손상)"},
     "old_ada": {
         "INT": "정상", "DMG1": "T1(경간 중앙 수직재) 절반 절단", "DMG2": "T1 완전 절단",
         "RCV": "T1 보수 후 (회복 불완전, 오경보 계산에서 제외)", "DMG3": "T2(5/8 지점 수직재) 완전 절단 + T1 보수 후 잔여 손상 (다중 손상)",
     },
 }
 HW_POSITION = {"acc01": "HW L/4 가속도계에 대응", "acc02": "HW L/2 가속도계에 대응", "acc03": "세션 차이 확인용 (HW 에 없음)"}
+HW_POSITION_V4 = {   # 사전 등록서 v4 3절의 대응 (교량 L/4·L/2 위치와 같지 않음)
+    "vanersborg": {"acc01": "HW acc01 역할 (A1, 개폐 경간 약 1/3, 수직)", "acc02": "HW acc02 역할 (A5, 균형추 트러스 끝, 수직). HW L/2 에 대응하는 센서 없음"},
+    "lumo": {"acc01": "HW acc01 역할 (ML5, 높이 5.00m, 수평 x·y)", "acc02": "HW acc02 역할 (ML1, 높이 8.95m 꼭대기, 수평 x·y)"},
+}
+V4_DATASETS = ("vanersborg", "lumo")
 LABEL_COLS = ["damage_stage", "stage_description", "label_status", "ai1_split", "cv_group", "subset", "source_record",
               "condition", "setup", "temperature_c", "train_passing", "wind_range", "speed_kmh"]
 
@@ -605,13 +614,13 @@ def public_column_guide(frames):
     return pd.DataFrame(rows)
 
 
-def public_sensor_info():
+def public_sensor_info(names=PUBLIC_DATASETS):
     rows = []
-    for name in PUBLIC_DATASETS:
+    for name in names:
         s = pd.read_csv(public_paths(name, "public_raw")[1] / "sensors.csv", keep_default_na=False)
         s.insert(0, "dataset", name)
         s.insert(2, "결과파일_약칭", s["sensor_id"].map(sensor_short_name))
-        s["HW 대응"] = s["결과파일_약칭"].map(HW_POSITION)
+        s["HW 대응"] = s["결과파일_약칭"].map(HW_POSITION_V4.get(name, HW_POSITION))
         rows.append(s)
     return pd.concat(rows, ignore_index=True)
 
@@ -736,7 +745,21 @@ PUBLIC_STAGES = {
     "1.2-dev": (("hbta",), PUBLIC_OUT.with_name("for_AI2_1.2-dev"), "AI1-public-1.2-dev", lambda e: e["label_status"] == "개발용"),
     "1.2": (("hbta",), PUBLIC_OUT.with_name("for_AI2_1.2"), "AI1-public-1.2", lambda e: e["label_status"] == "확인용"),
     "1.3": (("ponte_moesa",), PUBLIC_OUT.with_name("for_AI2_1.3"), "AI1-public-1.3", lambda e: e["label_status"] == "DS2 이전"),
+    # 1.4: 처리된 데이터셋만 (Vänersborg 먼저, LUMO 는 처리 뒤 추가)
+    "1.4": (V4_DATASETS, PUBLIC_OUT.with_name("for_AI2_1.4"), "AI1-public-1.4", lambda e: e["label_status"] == "확인용"),
 }
+
+
+def align_deg_to_raw(raw, deg):
+    """열화본에서 빠진 Window (범위 초과 SAT 로 결측 → 제외) 를 원본과 같은 행으로 되살린다.
+    특징은 빈 값, hold_main = True, deg_window_dropped = True (사전 등록서: 원본·열화본 같은 Window, 같은 순서)"""
+    key = ["experiment_id", "window_start_us"]
+    lab = [c for c in raw.columns if c in deg.columns and (c in key or not c.startswith(("acc", "tac_", "raw_rms", "deg_rms", "v2_", "hold_", "cross_")))]
+    out = raw[lab].merge(deg.drop(columns=[c for c in lab if c not in key]), on=key, how="left", indicator=True)
+    dropped = out.pop("_merge").eq("left_only")
+    out["hold_main"] = out["hold_main"].where(~dropped, True)
+    out["deg_window_dropped"] = dropped
+    return out[[*deg.columns, "deg_window_dropped"]], int(dropped.sum())
 
 
 AS_WELCH = {"nperseg": 512, "noverlap": 256, "window": "hann", "f_min_hz": 1.0, "f_max_hz": 50.0}
@@ -867,10 +890,57 @@ def moesa_pre_provenance(frames):
     }
 
 
+def v4_provenance(frames, names, dropped):
+    """AI1-public-1.4 기록 (AI② Truss v4 사전 등록서 3절의 기록 요청 항목)"""
+    from config import LIS2DW12, V4_PREREG, VANERSBORG
+    root = RESULTS_DIR.parents[1]
+    out = {
+        "generated_at": datetime.now().isoformat(timespec="seconds"), "model_version": "AI1-public-1.4",
+        "preregistration": {**V4_PREREG, "sections": "3–5", "checked": "처리 전에 AI① 이 문서를 받아 SHA-256 일치 확인"},
+        "datasets_in_this_delivery": list(names),
+        "ai1_model": "판정 없음 (사전 등록서 3절: AI① v1 prediction 은 만들지 않음). 특징·지표·보류만",
+        "common": {
+            "degradation": f"1.1 과 같음: LIS2DW12 잡음 {LIS2DW12['noise_ug_per_rthz']}µg/√Hz → 14bit 양자화 → ±2g 범위 제한, 시드 {LIS2DW12['seed']}. "
+                           "채널 난수 default_rng([시드, 데이터셋 번호, 측정 번호, 채널 번호]), 데이터셋 번호 Vänersborg 4, LUMO 5",
+            "filter": "2–25Hz 4차 Butterworth 양방향 (원본·열화본 모두)",
+            "hold_threshold_m_s2": "0.0057041894 (1.1 deg_200Hz)",
+            "deg_window_dropped": "열화본에서 범위 초과(SAT) 샘플이 결측으로 바뀌어 Window 를 만들 수 없을 때, 원본과 같은 행을 남기고 특징은 빈 값, hold_main = True, deg_window_dropped = True",
+            "values_seen_by_ai1": "결과 값은 보거나 요약하지 않음. 처리 로그에 AI① v2 모드 진동수(원본 train 평균 스펙트럼의 피크 3개)가 자동으로 한 줄 출력됨 (전달 지표와 무관한 AI① 참고 열)",
+        },
+        "unchanged_outputs": ("4채널 보류 수정 뒤 HBTA·Ponte Moesa·Old ADA 를 다시 전처리·예측하고 1.1, 1.2-dev, 1.2, 1.3 결과 파일을 다시 만들어 "
+                              "git 기록과 비교. 1.1: 모든 파일 바이트 같음. 1.2-dev·1.2·1.3: 특징·보류·v1 열은 모두 같음. 다른 것은 AI① v2 참고 열 "
+                              "(v2_*) 뿐이며, 이전 전달 때 v2 예측을 돌리지 않아 비어 있던 열이 이번 재실행으로 채워진 것 (보류 수정과 무관). "
+                              "전달된 1.2-dev·1.2·1.3 파일은 바꾸지 않음"),
+    }
+    if "vanersborg" in names:
+        log = json.loads((root / "data" / "raw" / "public_raw" / "vanersborg" / "incline_log.json").read_text(encoding="utf-8"))
+        f = frames["vanersborg_raw"]
+        out["vanersborg"] = {
+            "source": f"{VANERSBORG['zip']} (MD5 {VANERSBORG['zip_md5']} 확인)",
+            "channels": {"acc01": "A1 = ch_18", "acc02": "A5 = ch_22", "incline": "ch_25 [deg]"},
+            "events": "CSV 64개 = 이벤트 64개, 파일 이름 시각순. 1–20 train (E1), 21–40 ai2_calib (E2), 41–57 test (PRE 오경보 확인), 58 = 2023_03_09T23_45_25 DUR, 59–64 POST",
+            "windows": "10.24초, 겹침 없음, 이벤트 파일 첫 샘플부터. window_start_us = UTC Unix µs (CSV ts 열)",
+            "gravity": "열화 때 수직축에 g·cos θ (θ = 같은 행 ch_25) 를 더해 양자화·범위 제한 후 다시 뺌",
+            "incline_missing": {"events_with_missing_rows": sum(1 for v in log.values() if v["incline_nan"]),
+                                "missing_rows_total": sum(v["incline_nan"] for v in log.values()),
+                                "rule": "빈 행은 앞뒤 유효 값으로 선형 보간, 보간할 수 없는 이벤트 시작·끝만 θ = 0 (1g)",
+                                "by_event": {k: {"missing": v["incline_nan"], "interpolated": v["interpolated"], "set_0deg": v["set_0deg"]}
+                                             for k, v in log.items() if v["incline_nan"]}},
+            "acc_missing_rows": sum(sum(v["acc_nan"].values()) for v in log.values()),
+            "time_stamps": "CSV ts 간격은 5ms. 같은 시각이 두 번 찍힌 행 1,910개 (전체 64개 이벤트), 35ms 빈칸 1곳. 같은 시각 행은 시간 격자에서 뒤 값이 남고, 짧은 빈칸은 1.1 과 같이 선형 보간",
+            "tac": "1-TAC: a = acc01, b = acc02, z축, Window 1개 단위, 3–25Hz, Welch nperseg 1024. 기준 스펙트럼 = ai1_split train (E1) Window 평균",
+            "deg_window_dropped": dropped.get("vanersborg", 0),
+            "windows_by_event": {r: int(n) for r, n in f.groupby("source_record").size().items()},
+        }
+    return out
+
+
 def export_public(stage="1.1"):
     names, out_dir, version, select = PUBLIC_STAGES[stage]
+    if stage == "1.4":   # 처리된 데이터셋만
+        names = tuple(n for n in names if public_paths(n, "public_deg")[0].exists())
     out_dir.mkdir(parents=True, exist_ok=True)
-    frames, labels = {}, []
+    frames, labels, dropped = {}, [], {}
     for name in names:
         exps = public_experiments(name)
         exps = exps[select(exps)]
@@ -878,11 +948,13 @@ def export_public(stage="1.1"):
         for source in ("public_raw", "public_deg"):
             out = public_results(name, source, exps, version)
             key = f"{name}_{'raw' if source == 'public_raw' else 'deg'}"
+            if stage == "1.4" and source == "public_deg":
+                out, dropped[name] = align_deg_to_raw(frames[f"{name}_raw"], out)
             frames[key] = out
             out.to_csv(out_dir / f"{name}_anomaly_results_{key.rsplit('_', 1)[1]}.csv", index=False, encoding="utf-8-sig")
     pd.concat(labels, ignore_index=True).to_csv(out_dir / "experiment_labels.csv", index=False, encoding="utf-8-sig")
     public_column_guide(frames).to_csv(out_dir / "column_guide.csv", index=False, encoding="utf-8-sig")
-    info = public_sensor_info()
+    info = public_sensor_info(names)
     info[info["dataset"].isin(names)].to_csv(out_dir / "sensor_info.csv", index=False, encoding="utf-8-sig")
     if stage in ("1.2-dev", "1.2"):
         frames["hbta_raw"]["window_start_s"]  # 1.2 부터 있는 열
@@ -891,7 +963,8 @@ def export_public(stage="1.1"):
     base = {"base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"}
     prov = (public_provenance(frames) if stage == "1.1" else
             {**dev_provenance(frames), **base} if stage == "1.2-dev" else
-            {**moesa_pre_provenance(frames), **base} if stage == "1.3" else {**check_provenance(frames), **base})
+            {**moesa_pre_provenance(frames), **base} if stage == "1.3" else
+            {**v4_provenance(frames, names, dropped), **base} if stage == "1.4" else {**check_provenance(frames), **base})
     (out_dir / "data_provenance.json").write_text(json.dumps(prov, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"공개 데이터 전달 파일 ({version}) → {out_dir}")
     for f in sorted(out_dir.iterdir()):
@@ -913,5 +986,7 @@ if __name__ == "__main__":
         export_public("1.2")
     elif sys.argv[1:] == ["public-moesa-pre"]:
         export_public("1.3")
+    elif sys.argv[1:] == ["public-v4"]:
+        export_public("1.4")
     else:
         main()

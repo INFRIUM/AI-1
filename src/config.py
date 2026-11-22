@@ -208,6 +208,53 @@ BRIDGES.update({
             "ai1_model": "zscore",
         },
     },
+    # ----- Truss v4 검증 (AI② 사전 등록서 v4, INFRIUM/AI-2@cc8f5b9, AI1-public-1.4) -----
+    "vanersborg": {
+        "bridge_id": "VANERSBORG", "bridge_type": "TRUSS", "structure_form": "RIVETED_STEEL_BASCULE_TRUSS",
+        "model_material": "STEEL", "exp_prefix": "VAN", "girder_line_y_mm": 0,
+        "sensors": [
+            _acc("VAN_ACC_01", "PCB 393A03 (A1)", "개폐 경간 약 1/3 지점 (수직)", 0.33, 0, 200, ["Z"]),
+            _acc("VAN_ACC_02", "PCB 393A03 (A5)", "균형추 트러스 끝 (수직, 균열에 가장 가까움)", 0.0, 0, 200, ["Z"]),
+        ],
+        "cross_features": [],
+        "damage_types": {},
+        "public": {
+            "window": {"mode": "fixed", "length_s": 10.24, "overlap": 0.0},
+            "filter_band_hz": (2.0, 25.0),
+            "acc_bands_hz": [(2, 8), (8, 15), (15, 25)],
+            "use_damping": False,
+            "pairs": {"a_b": ("VAN_ACC_01", "VAN_ACC_02")},
+            "main_pair": "a_b", "main_axis": "Z",
+            "model_sensors": ("VAN_ACC_01", "VAN_ACC_02"),
+            "tac": {"pairs": [("a_b", "Z")], "band_hz": (3.0, 25.0), "windows": 1, "nperseg": 1024},
+            "ar": {"order": 5, "channels": [("VAN_ACC_01", "Z"), ("VAN_ACC_02", "Z")]},
+            "raw_noise_ug_per_rthz": None,
+            "ai1_model": "none",   # 사전 등록서 v4: AI① v1 판정은 만들지 않음 (특징·보류만 전달)
+        },
+    },
+    "lumo": {
+        "bridge_id": "LUMO", "bridge_type": "TRUSS", "structure_form": "STEEL_LATTICE_TOWER",
+        "model_material": "STEEL", "exp_prefix": "LUMO", "girder_line_y_mm": 0,
+        "sensors": [
+            _acc("LUMO_ACC_01", "MEAS 8811LF (ML5)", "높이 5.00m (ML5)", 5.00 / 8.95, 0, 200, ["X", "Y"]),
+            _acc("LUMO_ACC_02", "MEAS 8811LF (ML1)", "높이 8.95m (ML1, 꼭대기)", 1.0, 0, 200, ["X", "Y"]),
+        ],
+        "cross_features": [],
+        "damage_types": {},
+        "public": {
+            "window": {"mode": "fixed", "length_s": 60.0, "overlap": 0.5},
+            "filter_band_hz": (2.0, 25.0),
+            "acc_bands_hz": [(2, 8), (8, 15), (15, 25)],
+            "use_damping": False,
+            "pairs": {"a_b": ("LUMO_ACC_01", "LUMO_ACC_02")},
+            "main_pair": "a_b", "main_axis": ["X", "Y"],   # 4개 채널 중 하나라도 보류면 hold_main
+            "model_sensors": ("LUMO_ACC_01", "LUMO_ACC_02"),
+            "tac": {"pairs": [("a_b", "X"), ("a_b", "Y")], "band_hz": (3.0, 25.0), "windows": 1, "nperseg": 2048},
+            "ar": {"order": 5, "channels": [("LUMO_ACC_01", "X"), ("LUMO_ACC_01", "Y"), ("LUMO_ACC_02", "X"), ("LUMO_ACC_02", "Y")]},
+            "raw_noise_ug_per_rthz": None,
+            "ai1_model": "none",
+        },
+    },
 })
 
 # =============================================================================
@@ -495,6 +542,35 @@ MOESA = {
         ("AMB_5", "26 15:54:45", "26 16:25:00", "DS2", 2, "DS1"),
         ("AMB_6", "26 16:32:08", "26 16:40:23", "DS2", 2, "DS1"),
     ],
+}
+
+# Vänersborg (스웨덴 개폐식 철도 트러스교). Zenodo 10.5281/zenodo.8300495, CC BY 4.0, Data in Brief 51 (2023) 109729
+# AI② 사전 등록서 v4 (INFRIUM/AI-2@cc8f5b9) 5절: 파일 이름 시각순 파단 전 57개 → 1–20 train, 21–40 ai2_calib, 41–57 test
+V4_PREREG = {
+    "document": "INFRIUM/AI-2@cc8f5b9173f1c76133bfc7cf23eee39f77c0e9e8 docs/AI2_PUBLIC_GRADE_PREREG_v4_TRUSS.md",
+    "sha256": "00aeccda84133c90913604b6f2b97f47091405ccf4a871fce12539803aece526",
+}
+VANERSBORG = {
+    "zip": "vanersborg/DiB.zip",
+    "zip_md5": "4235a9755b301b193f61a1183ef1b21b",
+    "sample_rate_hz": 200,
+    "sensors": {"VAN_ACC_01": "ch_18", "VAN_ACC_02": "ch_22"},   # A1, A5 (수직)
+    "incline_col": "ch_25",                                       # 경사계 [deg], 닫힘 0°, 열림 음수
+    "dur_event": "2023_03_09T23_45_25",
+    "roles": [(0, 20, "train", "E1_기준적합"), (20, 40, "ai2_calib", "E2_정상기준"), (40, 57, "test", "PRE_오경보확인")],
+}
+
+# LUMO (독일 하노버 격자 철탑). DOI 10.25835/0027803, CC BY 3.0. AI② 사전 등록서 v4 3·4절
+# 필요한 10분 블록 1,672개 (31개 구간) 만 분할 ZIP 에서 부분 다운로드 → 4채널만 꺼내 200Hz 로 바꾼 뒤 블록 파일 삭제
+LUMO = {
+    "blocks": "lumo/lumo_v4_blocks.csv",          # 구간·블록·ZIP 위치 표 (src/lumo_fetch.py 의 ZIP 목록 + 메타 라벨)
+    "channels": {("LUMO_ACC_01", "X"): "accel05x", ("LUMO_ACC_01", "Y"): "accel05y",   # ML5 (5.00m)
+                 ("LUMO_ACC_02", "X"): "accel01x", ("LUMO_ACC_02", "Y"): "accel01y"},  # ML1 (8.95m)
+    "fs_nominal": 1651.61,          # 사전 등록서 표기 (파일의 Fs = 51200/31 = 1651.6129…)
+    "target_fs": 200,
+    "target_samples": 119956,       # 사전 등록서: round(990600 × 200 / 1651.61)
+    "pad_s": 5.0,                   # 재표본화 전 양 끝 거울 반사 덧대기
+    "tmp_dir": ROOT / "data" / "interim" / "lumo_tmp",
 }
 
 # Old ADA (강 Warren 트러스, 다른 교량 점검용). Mendeley 10.17632/sc8whx4pvm.2, CC BY 4.0

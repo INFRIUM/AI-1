@@ -254,6 +254,13 @@ def method_text():
 
 def predict_dataset():
     """features.parquet 전체 (학습에 쓴 데이터 포함 모든 실험) 예측 → predictions.csv"""
+    if PUBLIC and PUBLIC["ai1_model"] == "none":
+        # 사전 등록서 v4 (LUMO, Vänersborg): AI① 모델 판정 없이 특징·지표·보류만 전달
+        feats = pd.read_parquet(FEAT_PATH).sort_values(["experiment_id", "window_start_us"], ignore_index=True)
+        OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        feats.to_csv(OUT_PATH, index=False, encoding="utf-8-sig")
+        print(f"[9~10] 판정 없음 (특징만): Window {len(feats):,}개 → {OUT_PATH}")
+        return
     bundle = load_bundle()
     feats = pd.read_parquet(FEAT_PATH)
     sensors = BRIDGES[ACTIVE_BRIDGE]["sensors"]

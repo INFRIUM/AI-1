@@ -419,6 +419,12 @@ def fs_of(signals):
     return next(iter(signals.values()))["fs"] if signals else None
 
 
+def main_axes():
+    """주 지표 축 목록 (소문자). 한 축이면 [z], LUMO 처럼 여러 축이면 [x, y]"""
+    ax = PUBLIC["main_axis"]
+    return [a.lower() for a in ([ax] if isinstance(ax, str) else ax)]
+
+
 def pair_channels(pair, axis):
     a, b = PUBLIC["pairs"][pair]
     return (a, axis), (b, axis)
@@ -433,7 +439,7 @@ def public_indicators(seg, fs):
             key = (sid, axis)
             coef = ar_coefficients(seg[key], ar["order"]) if key in seg else [np.nan] * ar["order"]
             out.update({f"{sensor_short_name(sid)}_ar{k}_{axis.lower()}": float(c) for k, c in enumerate(coef, start=1)})
-    a, b = pair_channels(PUBLIC["main_pair"], PUBLIC["main_axis"])
+    a, b = pair_channels(PUBLIC["main_pair"], main_axes()[0].upper())
     if a in seg and b in seg:   # AI① v2 모드 Feature 용 자기 스펙트럼 (나중에 모드 대역으로 요약)
         nper = min(PUBLIC["tac"]["nperseg"], len(seg[a]))
         f, p_aa = signal.welch(seg[a], fs, nperseg=nper)
@@ -569,7 +575,7 @@ def finish_public(feats, exps, sensors):
     fs = sensors[0]["sample_rate_hz"]
     thr = hold_threshold(fs)
     deg = DATA_SOURCE == "public_deg"
-    main_axis = PUBLIC["main_axis"].lower()
+    axes_main = main_axes()
     main_sensors = {sensor_short_name(s) for s in PUBLIC["pairs"][PUBLIC["main_pair"]]}
     if thr is not None:
         for s in sensors:
@@ -580,7 +586,7 @@ def finish_public(feats, exps, sensors):
                     continue
                 held = (rms < thr).fillna(False)
                 feats[f"hold_{p}_{axis.lower()}"] = held.astype("boolean").mask(rms.isna())   # 센서 없음 = 빈 값
-                if deg and not (p in main_sensors and axis.lower() == main_axis):
+                if deg and not (p in main_sensors and axis.lower() in axes_main):
                     # 열화본: 주 지표 축이 아닌 채널이 보류되면 그 채널 특징과 그 채널을 쓰는 지표를 빈 값으로
                     cols = [c for c in feats.columns if c.startswith(f"{p}_") and c.endswith(f"_{axis.lower()}")]
                     cols += [f"cross_{name}" for name, num, den in BRIDGES[ACTIVE_BRIDGE].get("cross_features", [])
@@ -590,10 +596,15 @@ def finish_public(feats, exps, sensors):
                     feats.loc[held, cols] = np.nan
         flag = "hold_flag_" if deg else "raw_hold_flag_"
         for pair, (a, b) in PUBLIC["pairs"].items():
-            ca, cb = (f"hold_{sensor_short_name(x)}_{main_axis}" for x in (a, b))
-            if ca in feats and cb in feats:
-                # 두 센서 중 하나라도 보류면 보류. 한쪽 센서가 없는 실험은 빈 값
-                feats[f"{flag}{pair}"] = (feats[ca] | feats[cb]).mask(feats[ca].isna() | feats[cb].isna())
+            cols = [f"hold_{sensor_short_name(x)}_{ax}" for ax in axes_main for x in (a, b)]
+            if all(c in feats for c in cols):
+                # 주 축 채널(두 센서 × 주 축) 중 하나라도 보류면 보류. 채널이 없는 실험은 빈 값
+                held_any = feats[cols[0]].copy()
+                missing = feats[cols[0]].isna()
+                for c in cols[1:]:
+                    held_any = held_any | feats[c]
+                    missing = missing | feats[c].isna()
+                feats[f"{flag}{pair}"] = held_any.mask(missing)
     # AI① 판정 보류: 열화본에서 주 지표 쌍이 보류된(또는 센서가 없는) Window. 원본은 보류하지 않음
     main_flag = f"hold_flag_{PUBLIC['main_pair']}"
     feats["hold_main"] = feats[main_flag].fillna(True).astype(bool) if deg and main_flag in feats else False

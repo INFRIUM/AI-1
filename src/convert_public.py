@@ -27,10 +27,11 @@ from datetime import datetime, timezone
 import numpy as np
 import pandas as pd
 
-from config import GRAVITY, HBTA, LIS2DW12, MOESA, OLD_ADA, ORIGINAL_DIR, RAW_COLUMNS, ROOT
+from config import GRAVITY, HBTA, LIS2DW12, LUMO, MOESA, OLD_ADA, ORIGINAL_DIR, RAW_COLUMNS, ROOT, VANERSBORG
 
-DATASETS = {"hbta": "hbta", "ponte_moesa": "moesa", "old_ada": "old_ada"}   # 데이터셋 → data/original 아래 폴더
-DATASET_INDEX = {"hbta": 1, "ponte_moesa": 2, "old_ada": 3}               # 열화 난수 시드에 쓰는 번호 (바꾸지 않음)
+DATASETS = {"hbta": "hbta", "ponte_moesa": "moesa", "old_ada": "old_ada",
+            "vanersborg": "vanersborg", "lumo": "lumo"}                              # 데이터셋 → data/original 아래 폴더
+DATASET_INDEX = {"hbta": 1, "ponte_moesa": 2, "old_ada": 3, "vanersborg": 4, "lumo": 5}   # 열화 난수 시드에 쓰는 번호 (바꾸지 않음)
 
 
 # ---------------------------------------------------------------------------
@@ -41,9 +42,11 @@ def lis2dw12_noise_std(fs):
     return LIS2DW12["noise_ug_per_rthz"] * 1e-6 * GRAVITY * np.sqrt(fs / 2)
 
 
-def degrade(x, fs, axis, rng):
-    """원본 가속도 [m/s^2] → LIS2DW12 출력. 반환: (열화 신호, 범위 초과 여부)"""
-    offset = GRAVITY if axis == "Z" else 0.0          # 수직축은 중력이 더해진 상태로 측정됨
+def degrade(x, fs, axis, rng, offset=None):
+    """원본 가속도 [m/s^2] → LIS2DW12 출력. 반환: (열화 신호, 범위 초과 여부)
+    offset: 센서 축에 걸리는 중력 [m/s^2] (스칼라 또는 샘플별 배열). 없으면 수직(Z)축 1g, 수평축 0"""
+    if offset is None:
+        offset = GRAVITY if axis == "Z" else 0.0      # 수직축은 중력이 더해진 상태로 측정됨
     full = LIS2DW12["range_g"] * GRAVITY
     lsb = 2 * full / 2 ** LIS2DW12["bits"]
     y = x + offset + rng.normal(0.0, lis2dw12_noise_std(fs), len(x))
@@ -78,25 +81,27 @@ def to_frame(signals, t_us, fs, sat=None):
 
 
 def write_dataset(name, records, experiments, sensors):
-    """records: [(record_id, {(sensor_id, axis): 원본 배열}, t_us, fs[, 측정 번호])] → public_raw / public_deg 두 벌 저장.
-    측정 번호(열화 난수에 쓰임)를 주지 않으면 목록 순서 1, 2, ..."""
+    """records: [(record_id, {(sensor_id, axis): 원본 배열}, t_us, fs[, 측정 번호[, {(sensor_id, axis): 중력 배열}]])]
+    → public_raw / public_deg 두 벌 저장. 측정 번호(열화 난수에 쓰임)를 주지 않으면 목록 순서 1, 2, ...
+    중력 배열을 주면 그 채널은 1g 대신 그 값을 더해 열화 (회전하는 교량)"""
     out = {src: ROOT / "data" / "raw" / src / name for src in ("public_raw", "public_deg")}
     for d in out.values():
         d.mkdir(parents=True, exist_ok=True)
-    sat_total = 0
-    for i, rec in enumerate(records, start=1):
+    sat_total, i = 0, 0
+    for i, rec in enumerate(records, start=1):   # records 는 목록 또는 하나씩 만드는 생성기 (LUMO)
         rid, signals, t_us, fs = rec[:4]
         r_no = rec[4] if len(rec) > 4 else i
+        offsets = rec[5] if len(rec) > 5 else {}
         to_frame(signals, t_us, fs).to_parquet(out["public_raw"] / f"{rid}.parquet", index=False)
         deg, sat = {}, {}
         for c_no, (key, v) in enumerate(signals.items(), start=1):
-            deg[key], sat[key] = degrade(v, fs, key[1], channel_rng(name, r_no, c_no))
+            deg[key], sat[key] = degrade(v, fs, key[1], channel_rng(name, r_no, c_no), offsets.get(key))
             sat_total += int(sat[key].sum())
         to_frame(deg, t_us, fs, sat).to_parquet(out["public_deg"] / f"{rid}.parquet", index=False)
     for d in out.values():
         experiments.to_csv(d / "experiments.csv", index=False, encoding="utf-8-sig")
         sensors.to_csv(d / "sensors.csv", index=False, encoding="utf-8-sig")
-    print(f"[{name}] 측정 {len(records)}개, 실험(블록) {len(experiments)}개 → {out['public_raw']} / {out['public_deg']}")
+    print(f"[{name}] 측정 {i}개 (이번 실행), 실험(블록) {len(experiments)}개 → {out['public_raw']} / {out['public_deg']}")
     print(f"  열화본 범위 초과(SAT) 샘플: {sat_total:,}")
     return out
 
@@ -435,7 +440,174 @@ def convert_old_ada():
     print(exps.groupby(["condition", "damage_stage", "split"]).agg(실험=("experiment_id", "size")).to_string())
 
 
-CONVERTERS = {"hbta": convert_hbta, "ponte_moesa": convert_moesa, "old_ada": convert_old_ada}
+# ---------------------------------------------------------------------------
+# Vänersborg (AI1-public-1.4, AI② 사전 등록서 v4)
+# ---------------------------------------------------------------------------
+def incline_gravity(theta):
+    """경사계 각도 [deg] → 수직축 중력 g·cos θ. 빈 행은 앞뒤 유효 값으로 선형 보간,
+    보간할 수 없는 처음·끝 빈 행만 θ = 0 (1g). 반환: (중력 배열, 빈 행 수, 보간 수, 0° 처리 수)"""
+    th = pd.Series(theta, dtype=float)
+    n_nan = int(th.isna().sum())
+    filled = th.interpolate(method="linear", limit_area="inside")
+    n_zero = int(filled.isna().sum())
+    filled = filled.fillna(0.0)
+    return GRAVITY * np.cos(np.deg2rad(filled.to_numpy())), n_nan, n_nan - n_zero, n_zero
+
+
+def convert_vanersborg():
+    import json
+    import zipfile
+
+    fs, V = VANERSBORG["sample_rate_hz"], VANERSBORG
+    with zipfile.ZipFile(ORIGINAL_DIR / V["zip"]) as z:
+        names = sorted(n for n in z.namelist() if n.endswith(".csv"))
+        events = [n[:-4] for n in names]
+        i_dur = events.index(V["dur_event"])
+        if i_dur != 57 or len(events) != 64:
+            raise SystemExit(f"Vänersborg 이벤트 구성이 사전 등록서와 다름: {len(events)}개, 파단 중 {i_dur + 1}번째")
+        cols = ["ts", *V["sensors"].values(), V["incline_col"]]
+        records, rows, incline = [], [], {}
+        for k, (name, ev) in enumerate(zip(names, events)):
+            with z.open(name) as f:
+                d = pd.read_csv(f, usecols=cols)
+            t_us = pd.to_datetime(d["ts"], format="ISO8601").astype("datetime64[us]").astype(np.int64).to_numpy()
+            grav, n_nan, n_interp, n_zero = incline_gravity(d[V["incline_col"]].to_numpy())
+            signals = {(sid, "Z"): d[col].to_numpy(float) for sid, col in V["sensors"].items()}
+            offsets = {key: grav for key in signals}
+            incline[ev] = {"rows": int(len(d)), "incline_nan": n_nan, "interpolated": n_interp, "set_0deg": n_zero,
+                           "acc_nan": {sid: int(d[col].isna().sum()) for sid, col in V["sensors"].items()},
+                           "time_step_irregular": int((np.diff(t_us) != 5000).sum())}
+            rid = f"VAN_R_{k + 1:02d}"
+            records.append((rid, signals, t_us, fs, k + 1, offsets))
+            if k < 57:
+                split, group = next((s_, g_) for lo, hi, s_, g_ in V["roles"] if lo <= k < hi)
+                stage = "PRE"
+            else:
+                split = "test"
+                stage, group = ("DUR", "DUR_파단중") if k == 57 else ("POST", "POST_위험탐지")
+            n_win = int((len(d) / fs) // 10.24)
+            rows.append({
+                "experiment_id": f"VAN_{k + 1:04d}", "record_id": rid, "source_record": ev, "file": f"{rid}.parquet",
+                "start_us": int(t_us[0]), "end_us": int(t_us[0] + round(n_win * 10.24 * 1e6)), "n_windows": n_win,
+                "split": split, "cv_group": group, "bridge_type": "TRUSS", "damage_type": "D0" if stage == "PRE" else "DMG",
+                "severity_level": "", "damage_stage": stage, "label_status": "확인용", "condition": "OPENING_EVENT",
+                "load_position": "", "temperature_c": "", "train_passing": "", "wind_range": "",
+                "date": ev[:10].replace("_", "-"),
+            })
+    exps = pd.DataFrame(rows)
+    sensors = pd.DataFrame([
+        {"sensor_id": "VAN_ACC_01", "source_sensor": "A1 (ch_18)", "sensor_location": "개폐 경간 약 1/3 지점, 수직", "x_ratio": 0.33},
+        {"sensor_id": "VAN_ACC_02", "source_sensor": "A5 (ch_22)", "sensor_location": "균형추 트러스 끝, 수직 (균열에 가장 가까움)", "x_ratio": ""},
+    ]).assign(sensor_type="acceleration", device="PCB 393A03 / LIS2DW12 (열화본)", x_m="", y_m="",
+              sample_rate_hz=fs, unit="m/s^2", axes="Z")
+    out = write_dataset("vanersborg", records, exps, sensors)
+    (out["public_raw"] / "incline_log.json").write_text(json.dumps(incline, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(exps.groupby(["damage_stage", "split", "cv_group"]).agg(이벤트=("experiment_id", "size"), Window=("n_windows", "sum")).to_string())
+
+
+# ---------------------------------------------------------------------------
+# LUMO (AI1-public-1.4, AI② 사전 등록서 v4)
+# ---------------------------------------------------------------------------
+def lumo_resample(x, fs):
+    """10분 블록 1채널 → 200Hz. 양 끝을 5초씩 거울 반사로 덧대 FFT 재표본화한 뒤 덧댄 부분을 잘라낸다 (사전 등록서 3절)"""
+    from scipy import signal
+    pad = int(round(LUMO["pad_s"] * LUMO["fs_nominal"]))
+    pad_out = int(round(pad * LUMO["target_fs"] / LUMO["fs_nominal"]))
+    xp = np.pad(x, pad, mode="reflect")
+    y = signal.resample(xp, LUMO["target_samples"] + 2 * pad_out)
+    return y[pad_out:pad_out + LUMO["target_samples"]]
+
+
+def lumo_block(path):
+    """블록 .mat (v7.3) → (시작 시각 µs, Fs, {(sensor_id, axis): 200Hz m/s^2 배열}). 사용 4채널만 읽는다"""
+    import h5py
+    with h5py.File(path, "r") as f:
+        D = f["Dat"]
+        names = ["".join(map(chr, f[r][()].flatten())) for r in D["ChannelNames"][()].flatten()]
+        units = ["".join(map(chr, f[r][()].flatten())) for r in D["ChannelUnits"][()].flatten()]
+        t0 = "".join(map(chr, D["Time"][()].flatten()))
+        fs = float(D["Fs"][()].flatten()[0])
+        out = {}
+        for key, ch in LUMO["channels"].items():
+            k = names.index(ch)
+            if units[k] != "g":
+                raise SystemExit(f"{path.name}: {ch} 단위 {units[k]} (g 아님)")
+            x = D["Data"][k, :].astype(float) * GRAVITY
+            out[key] = lumo_resample(x, fs)
+        n = D["Data"].shape[1]
+    start_us = int(pd.Timestamp(t0, tz="UTC").value // 1000)
+    return start_us, fs, n, out
+
+
+def convert_lumo():
+    """구간 표의 블록을 하나씩 받아 변환하고 블록 파일은 지운다. 이미 변환된 블록은 건너뜀 (이어 받기)"""
+    from lumo_fetch import fetch_member
+
+    sel = pd.read_csv(ORIGINAL_DIR / LUMO["blocks"], dtype={"label": str, "crc32": str})
+    sel = sel.sort_values("t_end", ignore_index=True)
+    sel["record_id"] = [f"LUMO_R_{k:04d}" for k in range(1, len(sel) + 1)]
+    sel["experiment_id"] = [f"LUMO_{k:04d}" for k in range(1, len(sel) + 1)]
+    tmp = LUMO["tmp_dir"]
+    tmp.mkdir(parents=True, exist_ok=True)
+    raw_dir = ROOT / "data" / "raw" / "public_raw" / "lumo"
+    log_path = raw_dir / "fetch_log.csv"
+    log = pd.read_csv(log_path, dtype={"crc32": str}) if log_path.exists() else pd.DataFrame()
+    done = set(log["block"]) if len(log) else set()
+    step = 1 / LUMO["target_fs"]
+
+    def records():
+        nonlocal log
+        for k, r in sel.iterrows():
+            if r.block in done and (raw_dir / f"{r.record_id}.parquet").exists() and \
+                    (ROOT / "data" / "raw" / "public_deg" / "lumo" / f"{r.record_id}.parquet").exists():
+                continue
+            dest = tmp / f"{r.block}.mat"
+            ok, (b0, b1), parts = fetch_member(r.ym, r, dest)
+            if not ok:
+                raise SystemExit(f"{r.block}: CRC32 불일치")
+            start_us, fs, n, sig = lumo_block(dest)
+            dest.unlink()
+            t_us = start_us + np.round(np.arange(LUMO["target_samples"]) * step * 1e6).astype(np.int64)
+            entry = {"block": r.block, "zip": f"{r.ym[:4]}/{r.ym[4:]}/{r.ym[4:]}.zip", "member": r["name"], "parts": "+".join(map(str, parts)),
+                     "byte_range": f"{b0}-{b1}", "crc32": r.crc32, "crc_ok": ok, "fs_file": fs, "samples_file": n,
+                     "start_utc": pd.Timestamp(start_us, unit="us", tz="UTC").isoformat(), "label": r.label}
+            log = pd.concat([log, pd.DataFrame([entry])], ignore_index=True)
+            yield (r.record_id, sig, t_us, LUMO["target_fs"], k + 1)
+            raw_dir.mkdir(parents=True, exist_ok=True)
+            log.to_csv(log_path, index=False)
+            if (k + 1) % 50 == 0:
+                print(f"  LUMO 블록 {k + 1}/{len(sel)}", flush=True)
+
+    rows = []
+    for k, r in sel.iterrows():
+        rows.append({
+            "experiment_id": r.experiment_id, "record_id": r.record_id, "source_record": r.block, "file": f"{r.record_id}.parquet",
+            "split": r.ai1_split, "cv_group": r.cv_group, "bridge_type": "TRUSS", "damage_type": "D0" if r.damage_stage == "UDS" else "DMG",
+            "severity_level": "", "damage_stage": r.damage_stage, "label_status": "확인용", "condition": "WIND_AMBIENT",
+            "load_position": "", "temperature_c": "", "train_passing": "", "wind_range": "", "date": str(r.t_end)[:10],
+            "n_windows": 18, "meta_label": r.label,
+        })
+    exps = pd.DataFrame(rows)
+    sensors = pd.DataFrame([
+        {"sensor_id": "LUMO_ACC_01", "source_sensor": "accel05x, accel05y (ML5)", "sensor_location": "높이 5.00m (ML5)", "x_ratio": round(5.00 / 8.95, 3)},
+        {"sensor_id": "LUMO_ACC_02", "source_sensor": "accel01x, accel01y (ML1)", "sensor_location": "높이 8.95m (ML1, 꼭대기)", "x_ratio": 1.0},
+    ]).assign(sensor_type="acceleration", device="MEAS 8811LF / LIS2DW12 (열화본)", x_m="", y_m="",
+              sample_rate_hz=LUMO["target_fs"], unit="m/s^2", axes="X,Y")
+    # 블록 시작 시각은 받기 전에는 모르므로, 먼저 변환한 뒤 로그의 시작 시각으로 실험 시각을 채운다
+    out = write_dataset("lumo", records(), exps.assign(start_us=0, end_us=0), sensors)
+    log = pd.read_csv(log_path)
+    start = pd.to_datetime(log.set_index("block")["start_utc"]).map(lambda t: int(t.value // 1000))
+    exps["start_us"] = exps["source_record"].map(start)
+    exps["end_us"] = exps["start_us"] + int(round(LUMO["target_samples"] / LUMO["target_fs"] * 1e6))
+    if exps["start_us"].isna().any():
+        raise SystemExit(f"LUMO: 시작 시각 없는 블록 {int(exps['start_us'].isna().sum())}개")
+    for d in out.values():
+        exps.to_csv(d / "experiments.csv", index=False, encoding="utf-8-sig")
+    print(exps.groupby(["damage_stage", "split"]).agg(블록=("experiment_id", "size")).to_string())
+
+
+CONVERTERS = {"hbta": convert_hbta, "ponte_moesa": convert_moesa, "old_ada": convert_old_ada,
+              "vanersborg": convert_vanersborg, "lumo": convert_lumo}
 
 
 def main():
