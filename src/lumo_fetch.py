@@ -127,7 +127,7 @@ def build_index():
 def fetch_member(ym, row, dest):
     """목록 한 항목(블록 파일)을 받아 dest 에 저장, CRC32 확인. 반환: (CRC 일치, 받은 전역 바이트 범위, 분할 번호)"""
     m = Month.__new__(Month)
-    m.ym, m.n, m.part_size = ym, int(row["n_parts"]), int(row["part_size"])
+    m.ym, m.n, m.part_size = str(ym), int(row["n_parts"]), int(row["part_size"])
     m.last_size = int(row["total_size"]) - m.part_size * (m.n - 1)
     m.total = int(row["total_size"])
     lho = int(row["local_header_offset"])
@@ -135,7 +135,7 @@ def fetch_member(ym, row, dest):
     nlen, xlen = struct.unpack("<HH", head[26:30])
     start = lho + 30 + nlen + xlen
     data = m.read(start, int(row["compressed_size"]))
-    if int(row["method"]) != 0:
+    if int(row.get("method", 0)) != 0:   # ZIP 목록에서 모두 저장(0) 확인함
         raise RuntimeError(f"압축된 항목은 지원하지 않음: {row['name']}")
     Path(dest).write_bytes(data)
     ok = f"{zlib.crc32(data) & 0xFFFFFFFF:08x}" == row["crc32"]

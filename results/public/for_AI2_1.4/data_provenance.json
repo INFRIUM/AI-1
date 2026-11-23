@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-22T17:31:46",
+  "generated_at": "2026-11-23T11:44:38",
   "model_version": "AI1-public-1.4",
   "preregistration": {
     "document": "INFRIUM/AI-2@cc8f5b9173f1c76133bfc7cf23eee39f77c0e9e8 docs/AI2_PUBLIC_GRADE_PREREG_v4_TRUSS.md",
@@ -8,7 +8,8 @@
     "checked": "처리 전에 AI① 이 문서를 받아 SHA-256 일치 확인"
   },
   "datasets_in_this_delivery": [
-    "vanersborg"
+    "vanersborg",
+    "lumo"
   ],
   "ai1_model": "판정 없음 (사전 등록서 3절: AI① v1 prediction 은 만들지 않음). 특징·지표·보류만",
   "common": {
@@ -104,6 +105,56 @@
       "2023_03_11T16_36_25": 52,
       "2023_03_11T17_53_02": 84,
       "2023_03_11T18_34_51": 63
+    }
+  },
+  "lumo": {
+    "source": "LUMO structural_data (DOI 10.25835/0027803, CC BY 3.0). 월별 분할 ZIP (압축 없음) 의 ZIP 목록으로 블록 위치를 찾아 HTTP Range 로 블록 .mat 만 받음",
+    "blocks": "1672개 (31개 구간), 모두 CRC32 일치: True. 블록별 ZIP·항목·분할 번호·바이트 범위·CRC32·시작 시각·출처·메타 라벨 = lumo_fetch_log.csv",
+    "chunking": "Dat.Data (22 × 990600) float32, chunk (22 × 744), gzip 3 → 4채널만 받을 수 없어 블록 전체를 받고 4채널만 남긴 뒤 블록 파일 삭제",
+    "channels": {
+      "acc01": "ML5 (5.00m) accel05x, accel05y",
+      "acc02": "ML1 (8.95m) accel01x, accel01y",
+      "unit": "g × 9.80665 → m/s^2"
+    },
+    "fs_file": [
+      "1651.6129032258063"
+    ],
+    "samples_file": [
+      "990600"
+    ],
+    "resample": "양 끝 5.0초 거울 반사 덧대기 → scipy.signal.resample (FFT) 로 119956 + 덧댄 길이 샘플 → 덧댄 부분 잘라 119956 샘플 @ 200Hz. 원본·열화본 같은 신호에서 시작 (열화는 재표본화 뒤)",
+    "start_time": "블록 시작 시각 = Dat.Time 문자열 (UTC) 또는, Dat.Time 이 MATLAB datetime 객체인 블록은 샘플별 시각 배열 (POSIX ms) 의 첫 값. 모든 블록에서 '시작 + 샘플 수 / Fs' 가 파일 이름 시각 (분, UTC) 이후 120초 안인지 확인",
+    "start_source_counts": {
+      "Dat.Time": 1294,
+      "Dat.Timestamps[0]": 378
+    },
+    "windows": "60초, 30초 간격, 블록마다 18개. window_start_us = UTC Unix µs",
+    "hold_main": "4채널 (acc01 x·y, acc02 x·y) 중 하나라도 보류면 True",
+    "tac": "1-TAC: a = acc01, b = acc02, x·y 축 각각 (tac_a_b_x, tac_a_b_y), Window 1개 단위, 3–25Hz, Welch nperseg 2048. 기준 스펙트럼 = ai1_split train Window 평균",
+    "download_retries": {
+      "total": 18,
+      "by_block": {
+        "SHMTS_202105181346": 1,
+        "SHMTS_202105181856": 1,
+        "SHMTS_202105181906": 1,
+        "SHMTS_202105271251": 1,
+        "SHMTS_202106160828": 1,
+        "SHMTS_202106160818": 1,
+        "SHMTS_202107111647": 1,
+        "SHMTS_202107140016": 1,
+        "SHMTS_202107140006": 1,
+        "SHMTS_202107140026": 1,
+        "SHMTS_202107301357": 1,
+        "SHMTS_202107301807": 1,
+        "SHMTS_202107301857": 4,
+        "SHMTS_202107301847": 1,
+        "SHMTS_202107301827": 1
+      },
+      "note": "받는 도중 연결 끊김 (IncompleteRead, 원격 호스트 끊음). 다시 받은 블록은 모두 CRC32 일치. 첫 실행이 블록 1,659개 뒤 같은 블록 받기 5회 시도 실패로 멈춰, 재시도 사이 대기 (10초부터 두 배, 최대 5분) 를 넣고 이어 받음 (받은 블록 건너뜀)"
+    },
+    "deg_window_dropped": 0,
+    "windows_per_block": {
+      "18": 1672
     }
   },
   "base": "공통 규칙은 AI1-public-1.1 data_provenance.json 과 같음"

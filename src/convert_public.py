@@ -21,6 +21,7 @@ AI①·AI② 합의서 v3 (2026-11-12) 기준. 설정값은 config.py 의 [A-7] 
 실행: python src/convert_public.py                ← 원본이 있는 데이터셋 모두
       python src/convert_public.py hbta           ← 지정한 데이터셋만 (hbta / ponte_moesa / old_ada)
 """
+import time
 import sys
 from datetime import datetime, timezone
 
@@ -519,24 +520,35 @@ def lumo_resample(x, fs):
 
 
 def lumo_block(path):
-    """블록 .mat (v7.3) → (시작 시각 µs, Fs, {(sensor_id, axis): 200Hz m/s^2 배열}). 사용 4채널만 읽는다"""
+    """블록 .mat (v7.3) → (시작 시각 µs, Fs, 샘플 수, {(sensor_id, axis): 200Hz m/s^2 배열}, 시작 시각 출처). 사용 4채널만 남긴다"""
     import h5py
     with h5py.File(path, "r") as f:
         D = f["Dat"]
         names = ["".join(map(chr, f[r][()].flatten())) for r in D["ChannelNames"][()].flatten()]
         units = ["".join(map(chr, f[r][()].flatten())) for r in D["ChannelUnits"][()].flatten()]
-        t0 = "".join(map(chr, D["Time"][()].flatten()))
         fs = float(D["Fs"][()].flatten()[0])
+        n = D["Data"].shape[1]
+        if D["Time"].dtype == np.uint16:   # 문자열 'yyyy-mm-dd HH:MM:SS.fff'
+            start_us = int(pd.Timestamp("".join(map(chr, D["Time"][()].flatten())), tz="UTC").value // 1000)
+            time_src = "Dat.Time"
+        else:   # MATLAB datetime 객체: 샘플별 시각 배열(Timestamps 실제 데이터, POSIX ms) 의 첫 값
+            ts = next(d for d in f["#refs#"].values() if isinstance(d, h5py.Dataset) and d.size == n and d.dtype == np.float64)
+            start_us = int(round(float(ts[0, 0] if ts.ndim == 2 else ts[0]) * 1000))
+            time_src = "Dat.Timestamps[0]"
+        # 확인: 블록 끝 시각 = 파일 이름 (분 단위, UTC)
+        end_name = pd.Timestamp(path.stem.split("_")[1], tz="UTC")
+        end_us = start_us + n / fs * 1e6
+        if not 0 <= end_us / 1e6 - end_name.timestamp() < 120:
+            raise SystemExit(f"{path.name}: 시작 시각({time_src})이 파일 이름과 맞지 않음")
+        data = D["Data"][()]   # 22채널이 한 덩어리로 압축돼 있어 한 번에 읽고 4채널만 남긴다
         out = {}
         for key, ch in LUMO["channels"].items():
             k = names.index(ch)
             if units[k] != "g":
                 raise SystemExit(f"{path.name}: {ch} 단위 {units[k]} (g 아님)")
-            x = D["Data"][k, :].astype(float) * GRAVITY
-            out[key] = lumo_resample(x, fs)
-        n = D["Data"].shape[1]
-    start_us = int(pd.Timestamp(t0, tz="UTC").value // 1000)
-    return start_us, fs, n, out
+            out[key] = lumo_resample(data[k, :].astype(float) * GRAVITY, fs)
+        del data
+    return start_us, fs, n, out, time_src
 
 
 def convert_lumo():
@@ -555,28 +567,55 @@ def convert_lumo():
     done = set(log["block"]) if len(log) else set()
     step = 1 / LUMO["target_fs"]
 
+    def fetch(r):
+        dest = tmp / f"{r.block}.mat"
+        for attempt in range(8):   # 네트워크 끊김은 기다렸다가 다시 시도 (10, 20, 40 … 초, 최대 5분)
+            try:
+                return (dest, *fetch_member(r.ym, r, dest))
+            except Exception as e:   # noqa: BLE001
+                if attempt == 7:
+                    raise
+                wait = min(10 * 2 ** attempt, 300)
+                print(f"  {r.block}: 받기 다시 시도 {wait}초 뒤 ({e})", flush=True)
+                time.sleep(wait)
+
     def records():
+        """블록을 4개씩 동시에 미리 받고(I/O), 변환은 순서대로 하나씩. 받은 블록은 변환 직후 삭제"""
+        from concurrent.futures import ThreadPoolExecutor
+
         nonlocal log
-        for k, r in sel.iterrows():
-            if r.block in done and (raw_dir / f"{r.record_id}.parquet").exists() and \
-                    (ROOT / "data" / "raw" / "public_deg" / "lumo" / f"{r.record_id}.parquet").exists():
-                continue
-            dest = tmp / f"{r.block}.mat"
-            ok, (b0, b1), parts = fetch_member(r.ym, r, dest)
-            if not ok:
-                raise SystemExit(f"{r.block}: CRC32 불일치")
-            start_us, fs, n, sig = lumo_block(dest)
+        todo = [(k, r) for k, r in sel.iterrows()
+                if not (r.block in done and (raw_dir / f"{r.record_id}.parquet").exists()
+                        and (ROOT / "data" / "raw" / "public_deg" / "lumo" / f"{r.record_id}.parquet").exists())]
+        print(f"  LUMO: 받을 블록 {len(todo)}개 (이미 변환 {len(sel) - len(todo)}개)", flush=True)
+        ahead = 6
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = {i: pool.submit(fetch, todo[i][1]) for i in range(min(ahead, len(todo)))}
+            for i, (k, r) in enumerate(todo):
+                dest, ok, (b0, b1), parts = futures.pop(i).result()
+                if i + ahead < len(todo):
+                    futures[i + ahead] = pool.submit(fetch, todo[i + ahead][1])
+                if not ok:
+                    raise SystemExit(f"{r.block}: CRC32 불일치")
+                yield from convert_one(k, r, dest, ok, b0, b1, parts)
+
+    def convert_one(k, r, dest, ok, b0, b1, parts):
+        nonlocal log
+        if True:
+            start_us, fs, n, sig, time_src = lumo_block(dest)
             dest.unlink()
             t_us = start_us + np.round(np.arange(LUMO["target_samples"]) * step * 1e6).astype(np.int64)
-            entry = {"block": r.block, "zip": f"{r.ym[:4]}/{r.ym[4:]}/{r.ym[4:]}.zip", "member": r["name"], "parts": "+".join(map(str, parts)),
+            entry = {"block": r.block, "zip": f"{str(r.ym)[:4]}/{str(r.ym)[4:]}/{str(r.ym)[4:]}.zip", "member": r["name"], "parts": "+".join(map(str, parts)),
                      "byte_range": f"{b0}-{b1}", "crc32": r.crc32, "crc_ok": ok, "fs_file": fs, "samples_file": n,
-                     "start_utc": pd.Timestamp(start_us, unit="us", tz="UTC").isoformat(), "label": r.label}
+                     "start_utc": pd.Timestamp(start_us, unit="us", tz="UTC").isoformat(), "start_source": time_src, "label": r.label}
             log = pd.concat([log, pd.DataFrame([entry])], ignore_index=True)
             yield (r.record_id, sig, t_us, LUMO["target_fs"], k + 1)
             raw_dir.mkdir(parents=True, exist_ok=True)
-            log.to_csv(log_path, index=False)
-            if (k + 1) % 50 == 0:
-                print(f"  LUMO 블록 {k + 1}/{len(sel)}", flush=True)
+            part = log_path.with_suffix(".tmp")   # 쓰는 도중 멈춰도 기록이 깨지지 않게 임시 파일 → 바꿔치기
+            log.to_csv(part, index=False)
+            part.replace(log_path)
+            if (k + 1) % 25 == 0:
+                print(f"  LUMO 블록 {k + 1}/{len(sel)} ({pd.Timestamp.now():%H:%M})", flush=True)
 
     rows = []
     for k, r in sel.iterrows():

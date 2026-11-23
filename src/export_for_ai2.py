@@ -932,6 +932,36 @@ def v4_provenance(frames, names, dropped):
             "deg_window_dropped": dropped.get("vanersborg", 0),
             "windows_by_event": {r: int(n) for r, n in f.groupby("source_record").size().items()},
         }
+    if "lumo" in names:
+        import re
+        from config import LUMO
+        log = pd.read_csv(root / "data" / "raw" / "public_raw" / "lumo" / "fetch_log.csv", dtype=str)
+        log.to_csv(PUBLIC_OUT.with_name("for_AI2_1.4") / "lumo_fetch_log.csv", index=False, encoding="utf-8-sig")
+        retries = {}
+        for lf in sorted((root / "data" / "interim").glob("lumo_convert*.log")):
+            for m in re.finditer(r"(SHMTS_\d+): 받기 다시 시도", lf.read_text(encoding="utf-8")):
+                retries[m.group(1)] = retries.get(m.group(1), 0) + 1
+        f = frames["lumo_raw"]
+        out["lumo"] = {
+            "source": "LUMO structural_data (DOI 10.25835/0027803, CC BY 3.0). 월별 분할 ZIP (압축 없음) 의 ZIP 목록으로 블록 위치를 찾아 HTTP Range 로 블록 .mat 만 받음",
+            "blocks": f"{len(log)}개 (31개 구간), 모두 CRC32 일치: {bool((log['crc_ok'] == 'True').all())}. 블록별 ZIP·항목·분할 번호·바이트 범위·CRC32·시작 시각·출처·메타 라벨 = lumo_fetch_log.csv",
+            "chunking": "Dat.Data (22 × 990600) float32, chunk (22 × 744), gzip 3 → 4채널만 받을 수 없어 블록 전체를 받고 4채널만 남긴 뒤 블록 파일 삭제",
+            "channels": {"acc01": "ML5 (5.00m) accel05x, accel05y", "acc02": "ML1 (8.95m) accel01x, accel01y", "unit": "g × 9.80665 → m/s^2"},
+            "fs_file": sorted(log["fs_file"].unique().tolist()), "samples_file": sorted(log["samples_file"].unique().tolist()),
+            "resample": (f"양 끝 {LUMO['pad_s']}초 거울 반사 덧대기 → scipy.signal.resample (FFT) 로 {LUMO['target_samples']} + 덧댄 길이 샘플 → 덧댄 부분 잘라 "
+                         f"{LUMO['target_samples']} 샘플 @ {LUMO['target_fs']}Hz. 원본·열화본 같은 신호에서 시작 (열화는 재표본화 뒤)"),
+            "start_time": ("블록 시작 시각 = Dat.Time 문자열 (UTC) 또는, Dat.Time 이 MATLAB datetime 객체인 블록은 샘플별 시각 배열 (POSIX ms) 의 첫 값. "
+                           "모든 블록에서 '시작 + 샘플 수 / Fs' 가 파일 이름 시각 (분, UTC) 이후 120초 안인지 확인"),
+            "start_source_counts": log["start_source"].value_counts().to_dict(),
+            "windows": "60초, 30초 간격, 블록마다 18개. window_start_us = UTC Unix µs",
+            "hold_main": "4채널 (acc01 x·y, acc02 x·y) 중 하나라도 보류면 True",
+            "tac": "1-TAC: a = acc01, b = acc02, x·y 축 각각 (tac_a_b_x, tac_a_b_y), Window 1개 단위, 3–25Hz, Welch nperseg 2048. 기준 스펙트럼 = ai1_split train Window 평균",
+            "download_retries": {"total": sum(retries.values()), "by_block": retries,
+                                 "note": "받는 도중 연결 끊김 (IncompleteRead, 원격 호스트 끊음). 다시 받은 블록은 모두 CRC32 일치. "
+                                         "첫 실행이 블록 1,659개 뒤 같은 블록 받기 5회 시도 실패로 멈춰, 재시도 사이 대기 (10초부터 두 배, 최대 5분) 를 넣고 이어 받음 (받은 블록 건너뜀)"},
+            "deg_window_dropped": dropped.get("lumo", 0),
+            "windows_per_block": {str(k): int(v) for k, v in f.groupby("source_record").size().value_counts().items()},
+        }
     return out
 
 
