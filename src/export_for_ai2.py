@@ -497,7 +497,7 @@ def public_paths(name, source):
 
 def public_experiments(name):
     """실험 기록 (원본·열화본 동일). 파일 경로·내부 ID 는 빼고 정답·분할·조건만."""
-    exps = pd.read_csv(public_paths(name, "public_raw")[1] / "experiments.csv", keep_default_na=False)
+    exps = pd.read_csv(public_paths(name, "public_raw")[1] / "experiments.csv", keep_default_na=False, dtype={"meta_label": str})   # 메타 라벨 19자리는 숫자로 읽으면 깨짐
     exps = exps.rename(columns={"split": "ai1_split"})
     exps["stage_description"] = exps["damage_stage"].map(STAGE_TEXT[name]).fillna("")
     exps.insert(0, "dataset", name)
