@@ -1,0 +1,22 @@
+{
+ "inputs": {
+  "raw": "fef7accb07147acc3c3087430d396053",
+  "deg": "1df914fd20ac14ccd199a61cfd5b207a"
+ },
+ "deg": {
+  "n_fit": 604,
+  "n_val": 1082,
+  "n_val_pooled": 755,
+  "threshold_window": 348.5454962740475,
+  "threshold_pooled": 255.77565882201367,
+  "n_held": 15289
+ },
+ "raw": {
+  "n_fit": 604,
+  "n_val": 1082,
+  "n_val_pooled": 755,
+  "threshold_window": 623.8962061120164,
+  "threshold_pooled": 395.67068361831093,
+  "n_held": 15289
+ }
+}
