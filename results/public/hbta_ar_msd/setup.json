@@ -1,0 +1,21 @@
+{
+ "records": {
+  "UDS1": "MVS_P2_UDS_NM_Z_01",
+  "UDS2": "MVS_P2_UDS_NM_Z_02",
+  "DS1": "MVS_P2_DS1_NM_Z_01",
+  "DS2": "MVS_P2_DS2_NM_Z_01",
+  "DS3": "MVS_P2_DS3_NM_Z_01",
+  "DS4": "MVS_P2_DS4_NM_Z_01",
+  "DS5": "MVS_P2_DS5_NM_Z_01",
+  "DS6": "MVS_P2_DS6_NM_Z_01",
+  "DS7": "MVS_P2_DS7_NM_Z_01",
+  "DS8": "MVS_P2_DS8_NM_Z_01"
+ },
+ "start_s": 90.0,
+ "win": 1024,
+ "n_win": 80,
+ "copies": 20,
+ "snr": 20.0,
+ "trials": 1000,
+ "seed": 20261126
+}
