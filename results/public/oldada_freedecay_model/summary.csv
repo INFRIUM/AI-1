@@ -1,0 +1,3 @@
+﻿sensors,mu_f1,mu_f2,threshold_pct,n_test_normal,false_alarm,detect_DMG1,detect_DMG2,detect_DMG3,detect_all,detect_DMG2_3,auc,flag_ai2_calib,flag_INT30,flag_INT50,flag_RCV
+S8,2.9734004744744724,6.870969476613823,1.0,3,0.0,0.0,1.0,1.0,0.625,1.0,1.0,0.0,0.0,0.0,0.0
+S2,2.973403726438032,6.871083037127718,1.0,3,0.0,0.0,1.0,1.0,0.625,1.0,1.0,0.0,0.0,0.0,0.0
