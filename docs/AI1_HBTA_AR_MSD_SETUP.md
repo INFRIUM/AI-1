@@ -24,3 +24,12 @@ HBTA는 결과를 이미 본 데이터라 새 검증이 아니라 **논문 재�
 | R3 따로 잰 정상 | 학습은 UDS1 앞 40개만, 시험 정상은 UDS2 80개 전부 | 학습에 쓰지 않은 정상 측정에서 오경보 |
 
 R2·R3는 그룹 1·2와 센서 2개에 모두 적용한다. 보고 항목: 오경보율, 손상별·전체 놓침, AUC.
+
+## 추가: Isolation Forest 비교 (2026-11-26, 실행 전 기록)
+모든 전문 모델은 Isolation Forest와 비교한다는 #25 합의에 따라 추가한다. AR+MSD 결과(`summary.csv`)는 바꾸지 않는다.
+- 입력: 위와 같은 AR(5) 특징, 같은 그룹(1·2·센서 2개), 같은 시험 R1·R2·R3, 같은 학습·시험 Window.
+- 학습: 잡음 증강 없이 학습 Window 그대로 (R1·R2 80개, R3 40개). 증강은 공분산 안정용이라 Isolation Forest에는 쓰지 않는다.
+- 모델: `config.IFOREST` 설정 (나무 200개, random_state 42). 점수 = `-score_samples`.
+- 임계값: 학습 Window 점수의 99% 분위수 (`config.IFOREST["threshold_quantile"]`). 보조 z 규칙은 쓰지 않는다.
+- 결과: `results/public/hbta_ar_msd/iforest_summary.csv`, `iforest_by_state.csv`. 보고 항목은 AR+MSD와 같다.
+- 코드: `src/ai1_hbta_iforest.py`. 결과 파일이 있으면 다시 실행하지 않는다.
