@@ -1,0 +1,16 @@
+{
+ "x": [
+  "mean-strain01",
+  "mean-strain02",
+  "mean-strain03"
+ ],
+ "z": "mean-temp01",
+ "kappa": 0.2,
+ "arl0_h": 720,
+ "n_boot": 2000,
+ "l_max": 6000,
+ "min_blocks_per_hour": 4,
+ "edge_exclusion_h": 6,
+ "bandwidth": "Silverman (Phase I temp)",
+ "seed": 20261128
+}
