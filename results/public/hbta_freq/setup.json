@@ -1,0 +1,44 @@
+{
+ "start_s": 90.0,
+ "nperseg": 4096,
+ "nfft": 32768,
+ "search_hz": [
+  1.0,
+  30.0
+ ],
+ "prominence": 0.05,
+ "band_pct": 5.0,
+ "threshold_pct": 1.0,
+ "configs": [
+  "P2_NM_Z",
+  "P1_SM_Y",
+  "P1_SM_Z",
+  "P2_SM_Y",
+  "P2_SM_Z"
+ ],
+ "sets": {
+  "S2": [
+   "AG03_y",
+   "AG05_y"
+  ],
+  "SAG": [
+   "AG01_y",
+   "AG02_y",
+   "AG03_y",
+   "AG04_y",
+   "AG05_y",
+   "AG06_y",
+   "AG07_y",
+   "AG08_y",
+   "AG10_y",
+   "AG11_y",
+   "AG12_y",
+   "AG13_y",
+   "AG14_y",
+   "AG15_y",
+   "AG16_y",
+   "AG17_y",
+   "AG18_y"
+  ]
+ }
+}
