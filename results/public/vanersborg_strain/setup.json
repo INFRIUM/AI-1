@@ -1,0 +1,18 @@
+{
+ "sg": {
+  "SG9": "ch_9",
+  "SG10": "ch_10"
+ },
+ "report_sg": {
+  "SG11": "ch_11"
+ },
+ "incline": "ch_25",
+ "temp": "ch_30",
+ "z_star": 3.0,
+ "z_paper": 2.0,
+ "closed": "incline >= max - 1°",
+ "open": "incline <= min + 1°",
+ "roles": "0–19 train / 20–39 calib / 40–56 test / 57–63 damage",
+ "seed": 20261128,
+ "note": "개발 시험 (설계 중 손상 파일 2개 값을 봄)"
+}
